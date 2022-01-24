@@ -10,6 +10,29 @@ cmake -B build
 cmake --build build --config RelWithDebInfo
 ```
 
+## Example
+```lua
+local font = nil
+
+d2d.register(function()
+    font = d2d.create_font("Tahoma", 50)
+end,
+function()
+    d2d.color(1, 1, 1, 1)
+    d2d.text(font, 0, 0, "Hello World!")
+    d2d.color(1, 0, 0, 1)
+    d2d.text(font, 0, 50, "你好世界！") -- chinese
+    d2d.color(0, 1, 0, 1)
+    d2d.text(font, 0, 100, "こんにちは世界！") -- japanese
+    d2d.color(0, 0, 1, 1)
+    d2d.text(font, 0, 150, "안녕하세요, 세계입니다!") -- korean
+    d2d.color(1, 0, 1, 1)
+    d2d.text(font, 0, 200, "Привет мир!")
+    d2d.color(1, 1, 0, 1)
+    d2d.text(font, 0, 250, "😁💕😒😘🤣😂😊🤔🥴👈👉🤦‍♀️") -- emoji
+end)
+```
+
 ## API
 
 ### `d2d.register(init_fn, draw_fn)`
@@ -22,7 +45,7 @@ Registers your script with d2d allowing you to create d2d resources and draw usi
 ---
 
 ### `d2d.create_font(name, size, [bold], [italic])`
-Creates a font resource
+Creates a font resource.
 
 #### Params
 * `name` the font family name
