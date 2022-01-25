@@ -8,7 +8,7 @@
 
 const REFrameworkPluginInitializeParam* g_ref{};
 std::unique_ptr<D3D12Renderer> g_d3d12{};
-D2DRenderer* g_d2d{};
+D2DPainter* g_d2d{};
 std::vector<sol::function> g_draw_fns{};
 std::vector<sol::function> g_init_fns{};
 
@@ -101,7 +101,7 @@ void on_ref_frame() try {
         g_ref->functions->unlock_lua();
     }
 
-    g_d3d12->render([](D2DRenderer& d2d) {
+    g_d3d12->render([](D2DPainter& d2d) {
         g_ref->functions->lock_lua();
 
         for (const auto& draw_fn : g_draw_fns) {

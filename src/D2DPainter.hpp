@@ -10,9 +10,9 @@
 
 #include "LruCache.hpp"
 
-class D2DRenderer {
+class D2DPainter {
 public:
-    D2DRenderer(ID3D11Device* device, IDXGISurface* surface);
+    D2DPainter(ID3D11Device* device, IDXGISurface* surface);
 
     void begin();
     void end();

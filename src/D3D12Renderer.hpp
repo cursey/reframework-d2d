@@ -8,7 +8,7 @@
 #include <dxgi1_4.h>
 #include <wrl.h>
 
-#include "D2DRenderer.hpp"
+#include "D2DPainter.hpp"
 
 class D3D12Renderer {
 public:
@@ -25,7 +25,7 @@ public:
 
     D3D12Renderer(IDXGISwapChain* swapchain_, ID3D12Device* device_, ID3D12CommandQueue* cmd_queue_);
 
-    void render(std::function<void(D2DRenderer&)> draw_fn);
+    void render(std::function<void(D2DPainter&)> draw_fn);
 
     auto& get_d2d() { return m_d2d; }
 
@@ -62,7 +62,7 @@ private:
     int m_width{};
     int m_height{};
 
-    std::unique_ptr<D2DRenderer> m_d2d{};
+    std::unique_ptr<D2DPainter> m_d2d{};
     Clock::time_point m_d2d_next_frame_time{Clock::now()};
     const std::chrono::duration<double> D2D_UPDATE_INTERVAL{1.0 / 30.0};
     const std::chrono::milliseconds D2D_UPDATE_INTERVAL_MS{std::chrono::duration_cast<std::chrono::milliseconds>(D2D_UPDATE_INTERVAL)};

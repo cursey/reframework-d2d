@@ -2,9 +2,9 @@
 
 #include <utf8.h>
 
-#include "D2DRenderer.hpp"
+#include "D2DPainter.hpp"
 
-D2DRenderer::D2DRenderer(ID3D11Device* device, IDXGISurface* surface) {
+D2DPainter::D2DPainter(ID3D11Device* device, IDXGISurface* surface) {
     if (FAILED(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, m_d2d1.GetAddressOf()))) {
         throw std::runtime_error{"Failed to create D2D factory"};
     }
@@ -48,25 +48,25 @@ D2DRenderer::D2DRenderer(ID3D11Device* device, IDXGISurface* surface) {
     }
 }
 
-void D2DRenderer::begin() {
+void D2DPainter::begin() {
     m_context->SetTarget(m_rt.Get());
     m_context->BeginDraw();
     m_context->Clear(D2D1::ColorF(D2D1::ColorF::Black, 0.0f));
 }
 
-void D2DRenderer::end() {
+void D2DPainter::end() {
     m_context->EndDraw();
 }
 
-void D2DRenderer::set_color(unsigned int color) {
+void D2DPainter::set_color(unsigned int color) {
     m_brush->SetColor({(color & 0xFF0000) / 255.0f, (color & 0xFF00) / 255.0f, (color & 0xFF) / 255.0f, (color & 0xFF000000) / 255.0f});
 }
 
-void D2DRenderer::set_color(float r, float g, float b, float a) {
+void D2DPainter::set_color(float r, float g, float b, float a) {
     m_brush->SetColor({r, g, b, a});
 }
 
-int D2DRenderer::create_font(std::string name, int size, bool bold, bool italic) {
+int D2DPainter::create_font(std::string name, int size, bool bold, bool italic) {
     // Look for a font already matching the description.
     for (int i = 0; i < m_fonts.size(); i++) {
         if (m_fonts[i].name == name && m_fonts[i].size == size && m_fonts[i].bold == bold && m_fonts[i].italic == italic) {
@@ -94,13 +94,13 @@ int D2DRenderer::create_font(std::string name, int size, bool bold, bool italic)
     return m_fonts.size() - 1;
 }
 
-void D2DRenderer::text(int font, const std::string& text, float x, float y, unsigned int color) {
+void D2DPainter::text(int font, const std::string& text, float x, float y, unsigned int color) {
     set_color(color);
     auto layout = get_font(font).get_layout(m_dwrite.Get(), text);
     m_context->DrawTextLayout({x, y}, layout.Get(), m_brush.Get());
 }
 
-std::tuple<float, float> D2DRenderer::measure_text(int font, const std::string& text) {
+std::tuple<float, float> D2DPainter::measure_text(int font, const std::string& text) {
     auto layout = get_font(font).get_layout(m_dwrite.Get(), text);
     DWRITE_TEXT_METRICS metrics{};
 
@@ -109,22 +109,22 @@ std::tuple<float, float> D2DRenderer::measure_text(int font, const std::string& 
     return {metrics.width, metrics.height};
 }
 
-void D2DRenderer::fill_rect(float x, float y, float w, float h, unsigned int color) {
+void D2DPainter::fill_rect(float x, float y, float w, float h, unsigned int color) {
     set_color(color);
     m_context->FillRectangle({x, y, x + w, y + h}, m_brush.Get());
 }
 
-void D2DRenderer::outline_rect(float x, float y, float w, float h, float thickness, unsigned int color) {
+void D2DPainter::outline_rect(float x, float y, float w, float h, float thickness, unsigned int color) {
     set_color(color);
     m_context->DrawRectangle({x, y, x + w, y + h}, m_brush.Get(), thickness);
 }
 
-void D2DRenderer::line(float x1, float y1, float x2, float y2, float thickness, unsigned int color) {
+void D2DPainter::line(float x1, float y1, float x2, float y2, float thickness, unsigned int color) {
     set_color(color);
     m_context->DrawLine({x1, y1}, {x2, y2}, m_brush.Get(), thickness);
 }
 
-D2DRenderer::Font& D2DRenderer::get_font(int font) {
+D2DPainter::Font& D2DPainter::get_font(int font) {
     if (font < 0 || font >= m_fonts.size()) {
         throw std::runtime_error{"Invalid font"};
     }
@@ -132,7 +132,7 @@ D2DRenderer::Font& D2DRenderer::get_font(int font) {
     return m_fonts[font];
 }
 
-D2DRenderer::ComPtr<IDWriteTextLayout> D2DRenderer::Font::get_layout(IDWriteFactory* dwrite, const std::string& text) {
+D2DPainter::ComPtr<IDWriteTextLayout> D2DPainter::Font::get_layout(IDWriteFactory* dwrite, const std::string& text) {
     if (auto layout = text_layouts.get(text)) {
         return (*layout).get();
     }

@@ -103,7 +103,7 @@ D3D12Renderer::D3D12Renderer(IDXGISwapChain* swapchain_, ID3D12Device* device_, 
         throw std::runtime_error{"Failed to query DXGI surface"};
     }
 
-    m_d2d = std::make_unique<D2DRenderer>(m_d3d11_device.Get(), dxgi_surface.Get());
+    m_d2d = std::make_unique<D2DPainter>(m_d3d11_device.Get(), dxgi_surface.Get());
 
     // Create root signature.
     D3D12_DESCRIPTOR_RANGE desc_range{};
@@ -273,7 +273,7 @@ D3D12Renderer::D3D12Renderer(IDXGISwapChain* swapchain_, ID3D12Device* device_, 
     m_vert_buffer->Unmap(0, &range);
 }
 
-void D3D12Renderer::render(std::function<void(D2DRenderer&)> draw_fn) {
+void D3D12Renderer::render(std::function<void(D2DPainter&)> draw_fn) {
     m_cmd_allocator->Reset();
     m_cmd_list->Reset(m_cmd_allocator.Get(), nullptr);
 
