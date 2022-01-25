@@ -39,6 +39,13 @@ void on_ref_lua_state_created(lua_State* l) try {
     d2d["text"] = [](int font, float x, float y, const char* text) {
         g_d3d12->get_d2d()->text(font, x, y, text);
     };
+    d2d["measure_text"] = [](sol::this_state s, int font, const char* text) {
+        auto [w, h] = g_d3d12->get_d2d()->measure_text(font, text);
+        sol::variadic_results results{};
+        results.push_back(sol::make_object(s, w));
+        results.push_back(sol::make_object(s, h));
+        return results;
+    };
     d2d["fill_rect"] = [](float x, float y, float w, float h) {
         g_d3d12->get_d2d()->fill_rect(x, y, w, h);
     };

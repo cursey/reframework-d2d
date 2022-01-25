@@ -1,5 +1,6 @@
 #include <string>
 #include <vector>
+#include <tuple>
 
 #include <d2d1_3.h>
 #include <d3d11.h>
@@ -20,6 +21,7 @@ public:
 
     void color(float r, float g, float b, float a);
     void text(int font, float x, float y, const std::string& text);
+    std::tuple<float, float> measure_text(int font, const std::string& text);
     void fill_rect(float x, float y, float w, float h);
     void outline_rect(float x, float y, float w, float h, float thickness);
     void line(float x1, float y1, float x2, float y2, float thickness);
@@ -43,8 +45,12 @@ private:
         bool italic{};
         ComPtr<IDWriteTextFormat> text_format{};
         LruCache<std::string, ComPtr<IDWriteTextLayout>> text_layouts{100};
+
+        ComPtr<IDWriteTextLayout> get_layout(IDWriteFactory* dwrite, const std::string& text);
     };
 
     std::vector<Font> m_fonts{};
+
+    Font& get_font(int font);
 };
 

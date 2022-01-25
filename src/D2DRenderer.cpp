@@ -87,29 +87,17 @@ void D2DRenderer::color(float r, float g, float b, float a) {
 }
 
 void D2DRenderer::text(int font, float x, float y, const std::string& text) {
-    if (font < 0 || font >= m_fonts.size()) {
-        throw std::runtime_error{"Invalid font"};
-    }
-
-    auto& f = m_fonts[font];
-
-    if (auto layout = f.text_layouts.get(text)) {
-        auto& the_layout = (*layout).get();
-        m_context->DrawTextLayout({x, y}, the_layout.Get(), m_brush.Get());
-        return;
-    } 
-
-    ComPtr<IDWriteTextLayout> layout{};
-    std::wstring wide_text{};
-
-    utf8::utf8to16(text.begin(), text.end(), std::back_inserter(wide_text));
-
-    if (FAILED(m_dwrite->CreateTextLayout(wide_text.c_str(), wide_text.size(), f.text_format.Get(), 10000.0f, 10000.0f, &layout))) {
-        throw std::runtime_error{"Failed to create DWrite text layout"};
-    }
-
-    f.text_layouts.put(text, layout);
+    auto layout = get_font(font).get_layout(m_dwrite.Get(), text);
     m_context->DrawTextLayout({x, y}, layout.Get(), m_brush.Get());
+}
+
+std::tuple<float, float> D2DRenderer::measure_text(int font, const std::string& text) {
+    auto layout = get_font(font).get_layout(m_dwrite.Get(), text);
+    DWRITE_TEXT_METRICS metrics{};
+    
+    layout->GetMetrics(&metrics);
+
+    return {metrics.width, metrics.height};
 }
 
 void D2DRenderer::fill_rect(float x, float y, float w, float h) {
@@ -122,4 +110,31 @@ void D2DRenderer::outline_rect(float x, float y, float w, float h, float thickne
 
 void D2DRenderer::line(float x1, float y1, float x2, float y2, float thickness) {
     m_context->DrawLine({x1, y1}, {x2, y2}, m_brush.Get(), thickness);
+}
+
+D2DRenderer::Font& D2DRenderer::get_font(int font) {
+    if (font < 0 || font >= m_fonts.size()) {
+        throw std::runtime_error{"Invalid font"};
+    }
+    
+    return m_fonts[font];
+}
+
+D2DRenderer::ComPtr<IDWriteTextLayout> D2DRenderer::Font::get_layout(IDWriteFactory* dwrite, const std::string& text) {
+    if (auto layout = text_layouts.get(text)) {
+        return (*layout).get();
+    }
+
+    ComPtr<IDWriteTextLayout> layout{};
+    std::wstring wide_text{};
+
+    utf8::utf8to16(text.begin(), text.end(), std::back_inserter(wide_text));
+
+    if (FAILED(dwrite->CreateTextLayout(wide_text.c_str(), wide_text.size(), text_format.Get(), 10000.0f, 10000.0f, &layout))) {
+        throw std::runtime_error{"Failed to create dwrite text layout"};
+    }
+
+    text_layouts.put(text, layout);
+
+    return layout;
 }
