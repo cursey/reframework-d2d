@@ -1,5 +1,6 @@
 #include <memory>
 #include <functional>
+#include <chrono>
 
 #include <d3d11.h>
 #include <d3d11on12.h>
@@ -30,6 +31,7 @@ public:
 
 private:
     template <typename T> using ComPtr = Microsoft::WRL::ComPtr<T>;
+    using Clock = std::chrono::high_resolution_clock;
 
     struct Vert {
         float x, y;
@@ -60,7 +62,10 @@ private:
     int m_width{};
     int m_height{};
 
-    std::unique_ptr<D2DRenderer> m_d2d;
+    std::unique_ptr<D2DRenderer> m_d2d{};
+    Clock::time_point m_d2d_next_frame_time{Clock::now()};
+    const std::chrono::duration<double> D2D_UPDATE_INTERVAL{1.0 / 30.0};
+    const std::chrono::milliseconds D2D_UPDATE_INTERVAL_MS{std::chrono::duration_cast<std::chrono::milliseconds>(D2D_UPDATE_INTERVAL)};
 
     auto& get_rt(RTV rtv) { return m_rts[(int)rtv]; }
 

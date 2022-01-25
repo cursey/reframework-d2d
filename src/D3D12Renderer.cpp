@@ -277,13 +277,16 @@ void D3D12Renderer::render(std::function<void(D2DRenderer&)> draw_fn) {
     m_cmd_allocator->Reset();
     m_cmd_list->Reset(m_cmd_allocator.Get(), nullptr);
 
-    {
+    auto now = Clock::now();
+
+    if (now >= m_d2d_next_frame_time) {
         m_d3d11on12_device->AcquireWrappedResources(m_wrapped_rt.GetAddressOf(), 1);
         m_d2d->begin();
         draw_fn(*m_d2d);
         m_d2d->end();
         m_d3d11on12_device->ReleaseWrappedResources(m_wrapped_rt.GetAddressOf(), 1);
         m_d3d11_context->Flush();
+        m_d2d_next_frame_time = now + D2D_UPDATE_INTERVAL_MS;
     }
 
     auto L = 0.0f;
