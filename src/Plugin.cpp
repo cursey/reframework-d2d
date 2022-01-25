@@ -8,6 +8,7 @@
 
 const REFrameworkPluginInitializeParam* g_ref{};
 std::unique_ptr<D3D12Renderer> g_d3d12{};
+D2DRenderer* g_d2d{};
 std::vector<sol::function> g_draw_fns{};
 std::vector<sol::function> g_init_fns{};
 
@@ -31,29 +32,29 @@ void on_ref_lua_state_created(lua_State* l) try {
             italic = italic_obj.as<bool>();
         }
 
-        return g_d3d12->get_d2d()->create_font(name, size, bold, italic);
+        return g_d2d->create_font(name, size, bold, italic);
     };
     d2d["color"] = [](float r, float g, float b, float a) {
-        g_d3d12->get_d2d()->color(r, g, b, a);
+        g_d2d->color(r, g, b, a);
     };
     d2d["text"] = [](int font, float x, float y, const char* text) {
-        g_d3d12->get_d2d()->text(font, x, y, text);
+        g_d2d->text(font, x, y, text);
     };
     d2d["measure_text"] = [](sol::this_state s, int font, const char* text) {
-        auto [w, h] = g_d3d12->get_d2d()->measure_text(font, text);
+        auto [w, h] = g_d2d->measure_text(font, text);
         sol::variadic_results results{};
         results.push_back(sol::make_object(s, w));
         results.push_back(sol::make_object(s, h));
         return results;
     };
     d2d["fill_rect"] = [](float x, float y, float w, float h) {
-        g_d3d12->get_d2d()->fill_rect(x, y, w, h);
+        g_d2d->fill_rect(x, y, w, h);
     };
     d2d["outline_rect"] = [](float x, float y, float w, float h, float thickness) {
-        g_d3d12->get_d2d()->outline_rect(x, y, w, h, thickness);
+        g_d2d->outline_rect(x, y, w, h, thickness);
     };
-    d2d["width"] = [] { return g_d3d12->get_d2d()->width(); };
-    d2d["height"] = [] { return g_d3d12->get_d2d()->width(); };
+    d2d["width"] = [] { return g_d2d->width(); };
+    d2d["height"] = [] { return g_d2d->width(); };
     d2d["size"] = [](sol::this_state s) {
         auto& d2d = g_d3d12->get_d2d();
         sol::variadic_results results{};
@@ -76,6 +77,7 @@ void on_ref_lua_state_destroyed(lua_State* l) try {
 }
 
 void on_ref_device_reset() try {
+    g_d2d = nullptr;
     g_d3d12.reset();
 } catch(const std::exception& e) {
     OutputDebugStringA(e.what());
@@ -90,6 +92,7 @@ void on_ref_frame() try {
     if (g_d3d12 == nullptr) {
         g_d3d12 = std::make_unique<D3D12Renderer>((IDXGISwapChain*)g_ref->renderer_data->swapchain,
             (ID3D12Device*)g_ref->renderer_data->device, (ID3D12CommandQueue*)g_ref->renderer_data->command_queue);
+        g_d2d = g_d3d12->get_d2d().get();
 
         g_ref->functions->lock_lua();
 
