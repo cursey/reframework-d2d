@@ -36,8 +36,14 @@ void on_ref_lua_state_created(lua_State* l) try {
     d2d["color"] = [](float r, float g, float b, float a) {
         g_d3d12->get_d2d()->color(r, g, b, a);
     };
-    d2d["text"] = [](int font, int x, int y, const char* text) {
+    d2d["text"] = [](int font, float x, float y, const char* text) {
         g_d3d12->get_d2d()->text(font, x, y, text);
+    };
+    d2d["fill_rect"] = [](float x, float y, float w, float h) {
+        g_d3d12->get_d2d()->fill_rect(x, y, w, h);
+    };
+    d2d["outline_rect"] = [](float x, float y, float w, float h, float thickness) {
+        g_d3d12->get_d2d()->outline_rect(x, y, w, h, thickness);
     };
     lua["d2d"] = d2d;
 } catch (const std::exception& e) {

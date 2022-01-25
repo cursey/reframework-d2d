@@ -17,7 +17,9 @@ public:
     int create_font(std::string name, int size, bool bold = false, bool italic = false);
 
     void color(float r, float g, float b, float a);
-    void text(int font, int x, int y, const std::string& text);
+    void text(int font, float x, float y, const std::string& text);
+    void fill_rect(float x, float y, float w, float h);
+    void outline_rect(float x, float y, float w, float h, float thickness);
 
 private:
     template <typename T> using ComPtr = Microsoft::WRL::ComPtr<T>;
