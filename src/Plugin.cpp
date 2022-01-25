@@ -11,8 +11,10 @@ std::unique_ptr<D3D12Renderer> g_d3d12{};
 D2DPainter* g_d2d{};
 std::vector<sol::function> g_draw_fns{};
 std::vector<sol::function> g_init_fns{};
+lua_State* g_lua{};
 
 void on_ref_lua_state_created(lua_State* l) try { 
+    g_lua = l;
     sol::state_view lua{l}; 
     auto d2d = lua.create_table();
 
@@ -63,14 +65,17 @@ void on_ref_lua_state_created(lua_State* l) try {
     lua["d2d"] = d2d;
 } catch (const std::exception& e) {
     OutputDebugStringA(e.what());
+    g_ref->functions->log_error(e.what());
     throw e;
 }
 
 void on_ref_lua_state_destroyed(lua_State* l) try { 
     g_draw_fns.clear();
     g_init_fns.clear();
+    g_lua = nullptr;
 } catch (const std::exception& e) {
     OutputDebugStringA(e.what());
+    g_ref->functions->log_error(e.what());
     throw e;
 }
 
@@ -79,6 +84,7 @@ void on_ref_device_reset() try {
     g_d3d12.reset();
 } catch(const std::exception& e) {
     OutputDebugStringA(e.what());
+    g_ref->functions->log_error(e.what());
     throw e;
 }
 
@@ -95,7 +101,11 @@ void on_ref_frame() try {
         g_ref->functions->lock_lua();
 
         for (const auto& init_fn : g_init_fns) {
-            init_fn();
+            auto result = init_fn();
+
+            if (!result.valid()) {
+                sol::script_default_on_error(g_lua, std::move(result));
+            }
         }
 
         g_ref->functions->unlock_lua();
@@ -105,14 +115,18 @@ void on_ref_frame() try {
         g_ref->functions->lock_lua();
 
         for (const auto& draw_fn : g_draw_fns) {
-            draw_fn();
+            auto result = draw_fn();
+
+            if (!result.valid()) {
+                sol::script_default_on_error(g_lua, std::move(result));
+            }
         }
 
         g_ref->functions->unlock_lua();
     });
 } catch(const std::exception& e) {
     OutputDebugStringA(e.what());
-    throw e;
+    //g_ref->functions->log_error(e.what());
 }
 
 extern "C" __declspec(dllexport) void reframework_plugin_required_version(REFrameworkPluginVersion* version) {
