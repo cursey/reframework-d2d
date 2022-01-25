@@ -26,6 +26,9 @@ public:
     void outline_rect(float x, float y, float w, float h, float thickness);
     void line(float x1, float y1, float x2, float y2, float thickness);
 
+    auto width() const { return m_rt_desc.Width; }
+    auto height() const { return m_rt_desc.Height; } 
+
 private:
     template <typename T> using ComPtr = Microsoft::WRL::ComPtr<T>;
 
@@ -33,6 +36,7 @@ private:
     ComPtr<ID2D1Device> m_device{};
     ComPtr<ID2D1DeviceContext> m_context{};
 
+    DXGI_SURFACE_DESC m_rt_desc{};
     ComPtr<ID2D1Bitmap1> m_rt{};
     ComPtr<ID2D1SolidColorBrush> m_brush{};
 

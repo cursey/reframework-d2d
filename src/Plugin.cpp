@@ -52,6 +52,15 @@ void on_ref_lua_state_created(lua_State* l) try {
     d2d["outline_rect"] = [](float x, float y, float w, float h, float thickness) {
         g_d3d12->get_d2d()->outline_rect(x, y, w, h, thickness);
     };
+    d2d["width"] = [] { return g_d3d12->get_d2d()->width(); };
+    d2d["height"] = [] { return g_d3d12->get_d2d()->width(); };
+    d2d["size"] = [](sol::this_state s) {
+        auto& d2d = g_d3d12->get_d2d();
+        sol::variadic_results results{};
+        results.push_back(sol::make_object(s, d2d->width()));
+        results.push_back(sol::make_object(s, d2d->height()));
+        return results;
+    };
     lua["d2d"] = d2d;
 } catch (const std::exception& e) {
     OutputDebugStringA(e.what());

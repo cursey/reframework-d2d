@@ -23,6 +23,10 @@ D2DRenderer::D2DRenderer(ID3D11Device* device, IDXGISurface* surface) {
         throw std::runtime_error{"Failed to create D2D device context"};
     }
 
+    if (FAILED(surface->GetDesc(&m_rt_desc))) {
+        throw std::runtime_error{"Failed to get DXGI surface description"};
+    }
+
     float dpi_x{};
     float dpi_y{};
 
