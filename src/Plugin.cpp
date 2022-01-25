@@ -53,10 +53,10 @@ void on_ref_lua_state_created(lua_State* l) try {
     d2d["line"] = [](float x1, float y1, float x2, float y2, float thickness, unsigned int color) {
         g_d2d->line(x1, y1, x2, y2, thickness, color);
     };
-    d2d["width"] = [] { return g_d2d->width(); };
-    d2d["height"] = [] { return g_d2d->width(); };
-    d2d["size"] = [](sol::this_state s) {
-        auto [w, h] = g_d2d->size();
+    d2d["surface_width"] = [] { return g_d2d->surface_width(); };
+    d2d["surface_height"] = [] { return g_d2d->surface_width(); };
+    d2d["surface_size"] = [](sol::this_state s) {
+        auto [w, h] = g_d2d->surface_size();
         sol::variadic_results results{};
         results.push_back(sol::make_object(s, w));
         results.push_back(sol::make_object(s, h));
