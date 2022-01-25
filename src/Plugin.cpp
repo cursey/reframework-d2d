@@ -56,10 +56,10 @@ void on_ref_lua_state_created(lua_State* l) try {
     d2d["width"] = [] { return g_d2d->width(); };
     d2d["height"] = [] { return g_d2d->width(); };
     d2d["size"] = [](sol::this_state s) {
-        auto& d2d = g_d3d12->get_d2d();
+        auto [w, h] = g_d2d->size();
         sol::variadic_results results{};
-        results.push_back(sol::make_object(s, d2d->width()));
-        results.push_back(sol::make_object(s, d2d->height()));
+        results.push_back(sol::make_object(s, w));
+        results.push_back(sol::make_object(s, h));
         return results;
     };
     lua["d2d"] = d2d;

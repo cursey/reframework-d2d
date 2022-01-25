@@ -28,6 +28,7 @@ public:
 
     auto width() const { return m_rt_desc.Width; }
     auto height() const { return m_rt_desc.Height; } 
+    auto size() const { return std::make_tuple(m_rt_desc.Width, m_rt_desc.Height); }
 
 private:
     template <typename T> using ComPtr = Microsoft::WRL::ComPtr<T>;
