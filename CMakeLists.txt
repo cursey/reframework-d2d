@@ -75,6 +75,7 @@ list(APPEND reframework-d2d_SOURCES
 	"src/D2DRenderer.hpp"
 	"src/D3D12Renderer.hpp"
 	"src/D3D12Shaders.hpp"
+	"src/LruCache.hpp"
 )
 
 list(APPEND reframework-d2d_SOURCES

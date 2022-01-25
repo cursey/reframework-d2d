@@ -7,6 +7,8 @@
 #include <dwrite.h>
 #include <wrl.h>
 
+#include "LruCache.hpp"
+
 class D2DRenderer {
 public:
     D2DRenderer(ID3D11Device* device, IDXGISurface* surface);
@@ -35,11 +37,12 @@ private:
     ComPtr<IDWriteFactory> m_dwrite{};
 
     struct Font {
-        std::string name;
-        int size;
-        bool bold;
-        bool italic;
-        ComPtr<IDWriteTextFormat> text_format;
+        std::string name{};
+        int size{};
+        bool bold{};
+        bool italic{};
+        ComPtr<IDWriteTextFormat> text_format{};
+        LruCache<std::string, ComPtr<IDWriteTextLayout>> text_layouts{100};
     };
 
     std::vector<Font> m_fonts{};

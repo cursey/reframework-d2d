@@ -91,12 +91,25 @@ void D2DRenderer::text(int font, float x, float y, const std::string& text) {
         throw std::runtime_error{"Invalid font"};
     }
 
-    static std::wstring wide_text{};
-    wide_text.clear();
+    auto& f = m_fonts[font];
+
+    if (auto layout = f.text_layouts.get(text)) {
+        auto& the_layout = (*layout).get();
+        m_context->DrawTextLayout({x, y}, the_layout.Get(), m_brush.Get());
+        return;
+    } 
+
+    ComPtr<IDWriteTextLayout> layout{};
+    std::wstring wide_text{};
+
     utf8::utf8to16(text.begin(), text.end(), std::back_inserter(wide_text));
 
-    m_context->DrawText(
-        wide_text.c_str(), wide_text.size(), m_fonts[font].text_format.Get(), {x, y, 10000.0f, 10000.0f}, m_brush.Get());
+    if (FAILED(m_dwrite->CreateTextLayout(wide_text.c_str(), wide_text.size(), f.text_format.Get(), 10000.0f, 10000.0f, &layout))) {
+        throw std::runtime_error{"Failed to create DWrite text layout"};
+    }
+
+    f.text_layouts.put(text, layout);
+    m_context->DrawTextLayout({x, y}, layout.Get(), m_brush.Get());
 }
 
 void D2DRenderer::fill_rect(float x, float y, float w, float h) {
