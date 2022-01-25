@@ -20,6 +20,7 @@ public:
     void text(int font, float x, float y, const std::string& text);
     void fill_rect(float x, float y, float w, float h);
     void outline_rect(float x, float y, float w, float h, float thickness);
+    void line(float x1, float y1, float x2, float y2, float thickness);
 
 private:
     template <typename T> using ComPtr = Microsoft::WRL::ComPtr<T>;

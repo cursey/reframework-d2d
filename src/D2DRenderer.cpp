@@ -106,3 +106,7 @@ void D2DRenderer::fill_rect(float x, float y, float w, float h) {
 void D2DRenderer::outline_rect(float x, float y, float w, float h, float thickness) {
     m_context->DrawRectangle({x, y, x + w, y + h}, m_brush.Get(), thickness);
 }
+
+void D2DRenderer::line(float x1, float y1, float x2, float y2, float thickness) {
+    m_context->DrawLine({x1, y1}, {x2, y2}, m_brush.Get(), thickness);
+}
