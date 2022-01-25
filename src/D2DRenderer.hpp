@@ -17,14 +17,15 @@ public:
     void begin();
     void end();
 
-    int create_font(std::string name, int size, bool bold = false, bool italic = false);
+    void set_color(unsigned int color);
+    void set_color(float r, float g, float b, float a);
 
-    void color(float r, float g, float b, float a);
-    void text(int font, float x, float y, const std::string& text);
+    int create_font(std::string name, int size, bool bold = false, bool italic = false);
+    void text(int font, const std::string& text, float x, float y, unsigned int color);
     std::tuple<float, float> measure_text(int font, const std::string& text);
-    void fill_rect(float x, float y, float w, float h);
-    void outline_rect(float x, float y, float w, float h, float thickness);
-    void line(float x1, float y1, float x2, float y2, float thickness);
+    void fill_rect(float x, float y, float w, float h, unsigned int color);
+    void outline_rect(float x, float y, float w, float h, float thickness, unsigned int color);
+    void line(float x1, float y1, float x2, float y2, float thickness, unsigned int color);
 
     auto width() const { return m_rt_desc.Width; }
     auto height() const { return m_rt_desc.Height; } 

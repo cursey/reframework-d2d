@@ -34,11 +34,8 @@ void on_ref_lua_state_created(lua_State* l) try {
 
         return g_d2d->create_font(name, size, bold, italic);
     };
-    d2d["color"] = [](float r, float g, float b, float a) {
-        g_d2d->color(r, g, b, a);
-    };
-    d2d["text"] = [](int font, float x, float y, const char* text) {
-        g_d2d->text(font, x, y, text);
+    d2d["text"] = [](int font, const char* text, float x, float y, unsigned int color) {
+        g_d2d->text(font, text, x, y, color);
     };
     d2d["measure_text"] = [](sol::this_state s, int font, const char* text) {
         auto [w, h] = g_d2d->measure_text(font, text);
@@ -47,11 +44,14 @@ void on_ref_lua_state_created(lua_State* l) try {
         results.push_back(sol::make_object(s, h));
         return results;
     };
-    d2d["fill_rect"] = [](float x, float y, float w, float h) {
-        g_d2d->fill_rect(x, y, w, h);
+    d2d["fill_rect"] = [](float x, float y, float w, float h, unsigned int color) {
+        g_d2d->fill_rect(x, y, w, h, color);
     };
-    d2d["outline_rect"] = [](float x, float y, float w, float h, float thickness) {
-        g_d2d->outline_rect(x, y, w, h, thickness);
+    d2d["outline_rect"] = [](float x, float y, float w, float h, float thickness, unsigned int color) {
+        g_d2d->outline_rect(x, y, w, h, thickness, color);
+    };
+    d2d["line"] = [](float x1, float y1, float x2, float y2, float thickness, unsigned int color) {
+        g_d2d->line(x1, y1, x2, y2, thickness, color);
     };
     d2d["width"] = [] { return g_d2d->width(); };
     d2d["height"] = [] { return g_d2d->width(); };

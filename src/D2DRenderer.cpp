@@ -58,6 +58,14 @@ void D2DRenderer::end() {
     m_context->EndDraw();
 }
 
+void D2DRenderer::set_color(unsigned int color) {
+    m_brush->SetColor({(color & 0xFF0000) / 255.0f, (color & 0xFF00) / 255.0f, (color & 0xFF) / 255.0f, (color & 0xFF000000) / 255.0f});
+}
+
+void D2DRenderer::set_color(float r, float g, float b, float a) {
+    m_brush->SetColor({r, g, b, a});
+}
+
 int D2DRenderer::create_font(std::string name, int size, bool bold, bool italic) {
     // Look for a font already matching the description.
     for (int i = 0; i < m_fonts.size(); i++) {
@@ -86,11 +94,8 @@ int D2DRenderer::create_font(std::string name, int size, bool bold, bool italic)
     return m_fonts.size() - 1;
 }
 
-void D2DRenderer::color(float r, float g, float b, float a) {
-    m_brush->SetColor(D2D1::ColorF(r, g, b, a));
-}
-
-void D2DRenderer::text(int font, float x, float y, const std::string& text) {
+void D2DRenderer::text(int font, const std::string& text, float x, float y, unsigned int color) {
+    set_color(color);
     auto layout = get_font(font).get_layout(m_dwrite.Get(), text);
     m_context->DrawTextLayout({x, y}, layout.Get(), m_brush.Get());
 }
@@ -98,21 +103,24 @@ void D2DRenderer::text(int font, float x, float y, const std::string& text) {
 std::tuple<float, float> D2DRenderer::measure_text(int font, const std::string& text) {
     auto layout = get_font(font).get_layout(m_dwrite.Get(), text);
     DWRITE_TEXT_METRICS metrics{};
-    
+
     layout->GetMetrics(&metrics);
 
     return {metrics.width, metrics.height};
 }
 
-void D2DRenderer::fill_rect(float x, float y, float w, float h) {
+void D2DRenderer::fill_rect(float x, float y, float w, float h, unsigned int color) {
+    set_color(color);
     m_context->FillRectangle({x, y, x + w, y + h}, m_brush.Get());
 }
 
-void D2DRenderer::outline_rect(float x, float y, float w, float h, float thickness) {
+void D2DRenderer::outline_rect(float x, float y, float w, float h, float thickness, unsigned int color) {
+    set_color(color);
     m_context->DrawRectangle({x, y, x + w, y + h}, m_brush.Get(), thickness);
 }
 
-void D2DRenderer::line(float x1, float y1, float x2, float y2, float thickness) {
+void D2DRenderer::line(float x1, float y1, float x2, float y2, float thickness, unsigned int color) {
+    set_color(color);
     m_context->DrawLine({x1, y1}, {x2, y2}, m_brush.Get(), thickness);
 }
 
@@ -120,7 +128,7 @@ D2DRenderer::Font& D2DRenderer::get_font(int font) {
     if (font < 0 || font >= m_fonts.size()) {
         throw std::runtime_error{"Invalid font"};
     }
-    
+
     return m_fonts[font];
 }
 
