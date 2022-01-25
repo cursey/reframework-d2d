@@ -122,7 +122,7 @@ D2DRenderer::Font& D2DRenderer::get_font(int font) {
 
 D2DRenderer::ComPtr<IDWriteTextLayout> D2DRenderer::Font::get_layout(IDWriteFactory* dwrite, const std::string& text) {
     if (auto layout = text_layouts.get(text)) {
-        return *layout;
+        return (*layout).get();
     }
 
     ComPtr<IDWriteTextLayout> layout{};
