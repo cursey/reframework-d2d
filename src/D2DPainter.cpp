@@ -59,10 +59,10 @@ void D2DPainter::end() {
 }
 
 void D2DPainter::set_color(unsigned int color) {
-    m_brush->SetColor({(color & 0xFF0000) / 255.0f, (color & 0xFF00) / 255.0f, (color & 0xFF) / 255.0f, (color & 0xFF000000) / 255.0f});
-}
-
-void D2DPainter::set_color(float r, float g, float b, float a) {
+    float r = ((color & 0xFF'0000) >> 16) / 255.0f;
+    float g = ((color & 0xFF00) >> 8) / 255.0f;
+    float b = ((color & 0xFF) >> 0) / 255.0f;
+    float a = ((color & 0xFF00'0000) >> 24) / 255.0f;
     m_brush->SetColor({r, g, b, a});
 }
 

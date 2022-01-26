@@ -18,7 +18,6 @@ public:
     void end();
 
     void set_color(unsigned int color);
-    void set_color(float r, float g, float b, float a);
 
     int create_font(std::string name, int size, bool bold = false, bool italic = false);
     void text(int font, const std::string& text, float x, float y, unsigned int color);
