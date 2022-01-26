@@ -320,6 +320,13 @@ void D3D12Renderer::render(std::function<void(D2DPainter&)> draw_fn) {
     vp.TopLeftX = vp.TopLeftY = 0;
     m_cmd_list->RSSetViewports(1, &vp);
 
+    D3D12_RECT sr{};
+    sr.left = 0;
+    sr.top = 0;
+    sr.right = m_width;
+    sr.bottom = m_height;
+    m_cmd_list->RSSetScissorRects(1, &sr);
+
     D3D12_VERTEX_BUFFER_VIEW vbv{};
     vbv.BufferLocation = m_vert_buffer->GetGPUVirtualAddress();
     vbv.SizeInBytes = sizeof(Vert) * 6;
