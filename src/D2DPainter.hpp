@@ -17,6 +17,7 @@ public:
     void begin();
     void end();
 
+    void clear_fonts() { m_fonts.clear(); }
     void set_color(unsigned int color);
 
     int create_font(std::string name, int size, bool bold = false, bool italic = false);

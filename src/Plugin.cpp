@@ -12,6 +12,7 @@ D2DPainter* g_d2d{};
 std::vector<sol::function> g_draw_fns{};
 std::vector<sol::function> g_init_fns{};
 lua_State* g_lua{};
+bool g_needs_init{};
 
 void on_ref_lua_state_created(lua_State* l) try { 
     g_lua = l;
@@ -63,6 +64,7 @@ void on_ref_lua_state_created(lua_State* l) try {
         return results;
     };
     lua["d2d"] = d2d;
+    g_needs_init = true;
 } catch (const std::exception& e) {
     OutputDebugStringA(e.what());
     g_ref->functions->log_error(e.what());
@@ -97,7 +99,11 @@ void on_ref_frame() try {
         g_d3d12 = std::make_unique<D3D12Renderer>((IDXGISwapChain*)g_ref->renderer_data->swapchain,
             (ID3D12Device*)g_ref->renderer_data->device, (ID3D12CommandQueue*)g_ref->renderer_data->command_queue);
         g_d2d = g_d3d12->get_d2d().get();
+        g_needs_init = true;
+    }
 
+    if (g_needs_init) {
+        g_d2d->clear_fonts();
         g_ref->functions->lock_lua();
 
         for (const auto& init_fn : g_init_fns) {
@@ -109,6 +115,8 @@ void on_ref_frame() try {
         }
 
         g_ref->functions->unlock_lua();
+
+        g_needs_init = false;
     }
 
     g_d3d12->render([](D2DPainter& d2d) {
