@@ -75,15 +75,27 @@ D3D12Renderer::D3D12Renderer(IDXGISwapChain* swapchain_, ID3D12Device* device_, 
     m_width = backbuffer_desc.Width;
     m_height = backbuffer_desc.Height;
 
+    D3D12_RESOURCE_DESC d2d_desc{};
+    d2d_desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    d2d_desc.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+    d2d_desc.Width = backbuffer_desc.Width;
+    d2d_desc.Height = backbuffer_desc.Height;
+    d2d_desc.DepthOrArraySize = 1;
+    d2d_desc.MipLevels = 1;
+    d2d_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    d2d_desc.SampleDesc.Count = 1;
+    d2d_desc.SampleDesc.Quality = 0;
+    d2d_desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+
     D3D12_HEAP_PROPERTIES d2d_heap_props = {};
     d2d_heap_props.Type = D3D12_HEAP_TYPE_DEFAULT;
     d2d_heap_props.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
     d2d_heap_props.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
 
     D3D12_CLEAR_VALUE clear_value{};
-    clear_value.Format = backbuffer_desc.Format;
+    clear_value.Format = d2d_desc.Format;
 
-    if (FAILED(m_device->CreateCommittedResource(&d2d_heap_props, D3D12_HEAP_FLAG_NONE, &backbuffer_desc,
+    if (FAILED(m_device->CreateCommittedResource(&d2d_heap_props, D3D12_HEAP_FLAG_NONE, &d2d_desc,
             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, &clear_value, IID_PPV_ARGS(&m_rts[(int)RTV::D2D])))) {
         throw std::runtime_error{"Failed to create D2D render target"};
     }

@@ -27,16 +27,8 @@ D2DPainter::D2DPainter(ID3D11Device* device, IDXGISurface* surface) {
         throw std::runtime_error{"Failed to get DXGI surface description"};
     }
 
-    float dpi_x{};
-    float dpi_y{};
-
-    m_d2d1->GetDesktopDpi(&dpi_x, &dpi_y);
-
-    auto bitmap_props = D2D1::BitmapProperties1(D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW,
-        D2D1::PixelFormat(DXGI_FORMAT_UNKNOWN, D2D1_ALPHA_MODE_PREMULTIPLIED), dpi_x, dpi_y);
-
-    if (FAILED(m_context->CreateBitmapFromDxgiSurface(surface, &bitmap_props, &m_rt))) {
-        throw std::runtime_error{"Failed to create D2D render target"};
+    if (FAILED(m_context->CreateBitmapFromDxgiSurface(surface, nullptr, &m_rt))) {
+        throw std::runtime_error{"Failed to create D2D render target from dxgi surface"};
     }
 
     if (FAILED(m_context->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::White), &m_brush))) {
