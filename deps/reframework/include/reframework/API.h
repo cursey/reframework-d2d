@@ -1,17 +1,6 @@
 #ifndef REFRAMEWORK_API_H
 #define REFRAMEWORK_API_H
 
-#ifdef REFRAMEWORK_EXPORTS
-#define REFRAMEWORK_API __declspec(dllexport)
-#else
-// don't use this unless you really want to.
-#ifdef REFRAMEWORK_IMPORTS
-#define REFRAMEWORK_API __declspec(dllimport)
-#else
-#define REFRAMEWORK_API
-#endif
-#endif
-
 #define REFRAMEWORK_PLUGIN_VERSION_MAJOR 1
 #define REFRAMEWORK_PLUGIN_VERSION_MINOR 0
 #define REFRAMEWORK_PLUGIN_VERSION_PATCH 0
@@ -48,18 +37,6 @@ typedef void (*REFLuaLockUnlockFn)();
 typedef bool (*REFOnDeviceResetFn)(REFOnDeviceResetCb);
 typedef bool (*REFOnMessageFn)(REFOnMessageCb);
 
-// Optional imports. Passed through REFrameworkPluginFunctions.
-REFRAMEWORK_API bool reframework_on_initialized(REFInitializedCb cb);
-REFRAMEWORK_API bool reframework_on_lua_state_created(REFLuaStateCreatedCb cb);
-REFRAMEWORK_API bool reframework_on_lua_state_destroyed(REFLuaStateDestroyedCb cb);
-REFRAMEWORK_API bool reframework_on_frame(REFOnFrameCb cb);
-REFRAMEWORK_API bool reframework_on_pre_application_entry(const char* name, REFOnPreApplicationEntryCb cb);
-REFRAMEWORK_API bool reframework_on_post_application_entry(const char* name, REFOnPostApplicationEntryCb cb);
-REFRAMEWORK_API void reframework_lock_lua();
-REFRAMEWORK_API void reframework_unlock_lua();
-REFRAMEWORK_API bool reframework_on_device_reset(REFOnDeviceResetCb cb);
-REFRAMEWORK_API bool reframework_on_message(REFOnMessageCb cb);
-
 typedef struct {
     int major;
     int minor;
@@ -70,7 +47,6 @@ typedef struct {
 typedef void (*REFPluginRequiredVersionFn)(REFrameworkPluginVersion*);
 
 typedef struct {
-    REFOnInitializeFn on_initialized;
     REFOnLuaStateCreatedFn on_lua_state_created;
     REFOnLuaStateDestroyedFn on_lua_state_destroyed;
     REFOnFrameFn on_frame;
@@ -147,6 +123,8 @@ typedef struct {
     REFrameworkVMObjType (*get_vm_obj_type)(REFrameworkTypeDefinitionHandle);
 
     // All lookups are cached on our end
+    // however, the pointers will always stay the same,
+    // so you can cache them on your end e.g. with a static var to get a minor speed increase.
     REFrameworkMethodHandle (*find_method)(REFrameworkTypeDefinitionHandle, const char*);
     REFrameworkFieldHandle (*find_field)(REFrameworkTypeDefinitionHandle, const char*);
     REFrameworkPropertyHandle (*find_property)(REFrameworkTypeDefinitionHandle, const char*); // not implemented yet.
@@ -250,6 +228,8 @@ typedef struct {
     unsigned char* (*get_raw_database)(REFrameworkTDBHandle);
 
     // All lookups are cached on our end
+    // however, the pointers will always stay the same,
+    // so you can cache them on your end e.g. with a static var to get a minor speed increase.
     REFrameworkTypeDefinitionHandle (*get_type)(REFrameworkTDBHandle, unsigned int index);
     REFrameworkTypeDefinitionHandle (*find_type)(REFrameworkTDBHandle, const char* name);
     REFrameworkTypeDefinitionHandle (*find_type_by_fqn)(REFrameworkTDBHandle, unsigned int fqn);
@@ -311,6 +291,13 @@ typedef struct {
 } REFrameworkTypeInfo;
 
 typedef struct {
+    bool (*has_exception)(REFrameworkVMContextHandle);
+    void (*unhandled_exception)(REFrameworkVMContextHandle);
+    void (*local_frame_gc)(REFrameworkVMContextHandle);
+    void (*cleanup_after_exception)(REFrameworkVMContextHandle, int old_reference_count);
+} REFrameworkVMContext;
+
+typedef struct {
     REFrameworkTDBHandle (*get_tdb)();
     REFrameworkResourceManagerHandle (*get_resource_manager)();
     REFrameworkVMContextHandle (*get_vm_context)(); // per-thread context
@@ -323,8 +310,14 @@ typedef struct {
     // out_count is how many elements were written to the out buffer, not the size of the written data
     REFrameworkResult (*get_managed_singletons)(REFrameworkManagedSingleton* out, unsigned int out_size, unsigned int* out_count);
     REFrameworkResult (*get_native_singletons)(REFrameworkNativeSingleton* out, unsigned int out_size, unsigned int* out_count);
+
+    REFrameworkManagedObjectHandle (*create_managed_string)(const wchar_t* str);
+    REFrameworkManagedObjectHandle (*create_managed_string_normal)(const char* str);
 } REFrameworkSDKFunctions;
 
+// these are NOT pointers to the actual objects
+// they are interfaces with functions that take handles to the objects
+// the functions, however, can return the actual objects
 typedef struct {
     const REFrameworkSDKFunctions* functions;
     const REFrameworkTDB* tdb;
@@ -336,6 +329,7 @@ typedef struct {
     const REFrameworkResourceManager* resource_manager;
     const REFrameworkResource* resource;
     const REFrameworkTypeInfo* type_info; // NOT a type definition
+    const REFrameworkVMContext* vm_context;
 } REFrameworkSDKData;
 
 typedef struct {
