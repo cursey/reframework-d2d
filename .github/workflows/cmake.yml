@@ -34,8 +34,8 @@ jobs:
       - name: Compress artifacts
         uses: vimtor/action-zip@v1
         with:
-          files: ${{github.workspace}}/install/bin/
-          dest: ${{github.workspace}}/REFramework-D2D.zip
+          files: install/bin/
+          dest: REFramework-D2D.zip
       
       - name: Release
         uses: softprops/action-gh-release@v0.1.14
