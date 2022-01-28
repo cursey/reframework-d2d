@@ -115,3 +115,11 @@ target_link_libraries(reframework-d2d PUBLIC
 unset(CMKR_TARGET)
 unset(CMKR_SOURCES)
 
+install(
+	TARGETS
+		reframework-d2d
+	DESTINATION
+		bin
+	COMPONENT
+		reframework-d2d
+)

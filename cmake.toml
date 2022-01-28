@@ -23,3 +23,7 @@ headers = ["src/**.hpp"]
 include-directories = ["${LUA_INCLUDE_DIR}"]
 link-libraries = ["sol2::sol2", "${LUA_LIBRARIES}", "utf8cpp", "reframework", "d2d1", "dwrite", "d3d11", "d3d12", "dxgi", "d3dcompiler"]
 compile-features = ["cxx_std_20"]
+
+[[install]]
+targets = ["reframework-d2d"]
+destination = "bin"
