@@ -20,18 +20,21 @@ jobs:
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+        
+      - name: Install
+        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --prefix ${{github.workspace}}/install
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2.3.1
         with:
           name: REFramework-D2D
-          path: ${{github.workspace}}/build/${{env.BUILD_TYPE}}/reframework-d2d.dll
+          path: ${{github.workspace}}/install/bin/*
           if-no-files-found: error
           
       - name: Compress artifacts
         uses: vimtor/action-zip@v1
         with:
-          files: ${{github.workspace}}/build/${{env.BUILD_TYPE}}/reframework-d2d.dll
+          files: ${{github.workspace}}/install/bin/
           dest: ${{github.workspace}}/REFramework-D2D.zip
       
       - name: Release
