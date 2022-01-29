@@ -22,6 +22,7 @@ void on_ref_lua_state_created(lua_State* l) try {
     d2d["register"] = [](sol::function init_fn, sol::function draw_fn) {
         g_init_fns.emplace_back(init_fn);
         g_draw_fns.emplace_back(draw_fn);
+        g_needs_init = true;
     };
     d2d["create_font"] = [](const char* name, int size, sol::object bold_obj, sol::object italic_obj) {
         auto bold = false;
