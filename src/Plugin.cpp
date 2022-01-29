@@ -51,6 +51,9 @@ void on_ref_lua_state_created(lua_State* l) try {
     d2d["fill_rect"] = [](float x, float y, float w, float h, unsigned int color) {
         g_d2d->fill_rect(x, y, w, h, color);
     };
+    d2d["filled_rect"] = [](float x, float y, float w, float h, unsigned int color) {
+        g_d2d->fill_rect(x, y, w, h, color);
+    };
     d2d["outline_rect"] = [](float x, float y, float w, float h, float thickness, unsigned int color) {
         g_d2d->outline_rect(x, y, w, h, thickness, color);
     };
