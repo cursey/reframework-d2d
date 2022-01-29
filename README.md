@@ -1,5 +1,5 @@
 # REFramework Direct 2D
-This is an [REFramework](https://github.com/praydog/REFramework) plugin that adds a Direct2D scripting API. It is under heavy development and currently in a pre-alpha state.
+This is an [REFramework](https://github.com/praydog/REFramework) plugin that adds a Direct2D scripting API.
 
 ## Building
 Currently suggest building in RelWithDebInfo so that when issues arise you can debug and fix them.
