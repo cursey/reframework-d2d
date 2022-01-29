@@ -18,7 +18,11 @@ void on_ref_lua_state_created(lua_State* l) try {
     g_lua = l;
     sol::state_view lua{l}; 
     auto d2d = lua.create_table();
+    auto detail = lua.create_table();
 
+    detail["get_max_updaterate"] = []() { return g_d3d12->get_d2d_max_updaterate(); };
+    detail["set_max_updaterate"] = [](double fps) { g_d3d12->set_d2d_max_updaterate(fps); };
+    d2d["detail"] = detail;
     d2d["register"] = [](sol::function init_fn, sol::function draw_fn) {
         g_init_fns.emplace_back(init_fn);
         g_draw_fns.emplace_back(draw_fn);

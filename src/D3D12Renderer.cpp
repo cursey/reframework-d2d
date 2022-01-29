@@ -298,7 +298,7 @@ void D3D12Renderer::render(std::function<void(D2DPainter&)> draw_fn) {
         m_d2d->end();
         m_d3d11on12_device->ReleaseWrappedResources(m_wrapped_rt.GetAddressOf(), 1);
         m_d3d11_context->Flush();
-        m_d2d_next_frame_time = now + D2D_UPDATE_INTERVAL_MS;
+        m_d2d_next_frame_time = now + std::chrono::duration_cast<std::chrono::milliseconds>(m_d2d_update_interval);
     }
 
     auto L = 0.0f;

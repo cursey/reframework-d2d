@@ -28,6 +28,8 @@ public:
     void render(std::function<void(D2DPainter&)> draw_fn);
 
     auto& get_d2d() { return m_d2d; }
+    auto get_d2d_max_updaterate() const { return 1.0 / m_d2d_update_interval.count(); }
+    auto set_d2d_max_updaterate(double hz) { m_d2d_update_interval = std::chrono::duration<double>{1.0 / hz}; }
 
 private:
     template <typename T> using ComPtr = Microsoft::WRL::ComPtr<T>;
@@ -64,8 +66,8 @@ private:
 
     std::unique_ptr<D2DPainter> m_d2d{};
     Clock::time_point m_d2d_next_frame_time{Clock::now()};
-    const std::chrono::duration<double> D2D_UPDATE_INTERVAL{1.0 / 30.0};
-    const std::chrono::milliseconds D2D_UPDATE_INTERVAL_MS{std::chrono::duration_cast<std::chrono::milliseconds>(D2D_UPDATE_INTERVAL)};
+    const std::chrono::duration<double> DEFAULT_UPDATE_INTERVAL{1.0 / 60.0};
+    std::chrono::duration<double> m_d2d_update_interval{DEFAULT_UPDATE_INTERVAL};
 
     auto& get_rt(RTV rtv) { return m_rts[(int)rtv]; }
 
