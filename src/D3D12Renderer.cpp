@@ -205,13 +205,16 @@ D3D12Renderer::D3D12Renderer(IDXGISwapChain* swapchain_, ID3D12Device* device_, 
 
     auto& blend = pso_desc.BlendState;
     blend.AlphaToCoverageEnable = false;
+    blend.IndependentBlendEnable = false;
     blend.RenderTarget[0].BlendEnable = true;
-    blend.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+    blend.RenderTarget[0].LogicOpEnable = false;
+    blend.RenderTarget[0].SrcBlend = D3D12_BLEND_ONE;
     blend.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
     blend.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
     blend.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
     blend.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
     blend.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+    blend.RenderTarget[0].LogicOp = D3D12_LOGIC_OP_NOOP;
     blend.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
     auto& raster = pso_desc.RasterizerState;
