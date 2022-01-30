@@ -15,9 +15,9 @@ std::vector<sol::protected_function> g_init_fns{};
 lua_State* g_lua{};
 bool g_needs_init{};
 
-void on_ref_lua_state_created(lua_State* l) try { 
+void on_ref_lua_state_created(lua_State* l) try {
     g_lua = l;
-    sol::state_view lua{l}; 
+    sol::state_view lua{l};
     auto d2d = lua.create_table();
     auto detail = lua.create_table();
 
@@ -35,7 +35,7 @@ void on_ref_lua_state_created(lua_State* l) try {
 
         if (bold_obj.is<bool>()) {
             bold = bold_obj.as<bool>();
-        } 
+        }
 
         if (italic_obj.is<bool>()) {
             italic = italic_obj.as<bool>();
@@ -43,9 +43,7 @@ void on_ref_lua_state_created(lua_State* l) try {
 
         return g_d2d->create_font(name, size, bold, italic);
     };
-    d2d["text"] = [](int font, const char* text, float x, float y, unsigned int color) {
-        g_d2d->text(font, text, x, y, color);
-    };
+    d2d["text"] = [](int font, const char* text, float x, float y, unsigned int color) { g_d2d->text(font, text, x, y, color); };
     d2d["measure_text"] = [](sol::this_state s, int font, const char* text) {
         auto [w, h] = g_d2d->measure_text(font, text);
         sol::variadic_results results{};
@@ -53,12 +51,8 @@ void on_ref_lua_state_created(lua_State* l) try {
         results.push_back(sol::make_object(s, h));
         return results;
     };
-    d2d["fill_rect"] = [](float x, float y, float w, float h, unsigned int color) {
-        g_d2d->fill_rect(x, y, w, h, color);
-    };
-    d2d["filled_rect"] = [](float x, float y, float w, float h, unsigned int color) {
-        g_d2d->fill_rect(x, y, w, h, color);
-    };
+    d2d["fill_rect"] = [](float x, float y, float w, float h, unsigned int color) { g_d2d->fill_rect(x, y, w, h, color); };
+    d2d["filled_rect"] = [](float x, float y, float w, float h, unsigned int color) { g_d2d->fill_rect(x, y, w, h, color); };
     d2d["outline_rect"] = [](float x, float y, float w, float h, float thickness, unsigned int color) {
         g_d2d->outline_rect(x, y, w, h, thickness, color);
     };
@@ -79,7 +73,7 @@ void on_ref_lua_state_created(lua_State* l) try {
     API::get()->log_error("[reframework-d2d] [on_ref_lua_state_created] %s", e.what());
 }
 
-void on_ref_lua_state_destroyed(lua_State* l) try { 
+void on_ref_lua_state_destroyed(lua_State* l) try {
     g_draw_fns.clear();
     g_init_fns.clear();
     g_lua = nullptr;
@@ -91,7 +85,7 @@ void on_ref_lua_state_destroyed(lua_State* l) try {
 void on_ref_device_reset() try {
     g_d2d = nullptr;
     g_d3d12.reset();
-} catch(const std::exception& e) {
+} catch (const std::exception& e) {
     OutputDebugStringA(e.what());
     API::get()->log_error("[reframework-d2d] [on_ref_lua_device_reset] %s", e.what());
 }
@@ -103,8 +97,8 @@ void on_ref_frame() try {
 
     if (g_d3d12 == nullptr) {
         auto renderer_data = API::get()->param()->renderer_data;
-        g_d3d12 = std::make_unique<D3D12Renderer>((IDXGISwapChain*)renderer_data->swapchain,
-            (ID3D12Device*)renderer_data->device, (ID3D12CommandQueue*)renderer_data->command_queue);
+        g_d3d12 = std::make_unique<D3D12Renderer>((IDXGISwapChain*)renderer_data->swapchain, (ID3D12Device*)renderer_data->device,
+            (ID3D12CommandQueue*)renderer_data->command_queue);
         g_d2d = g_d3d12->get_d2d().get();
         g_needs_init = true;
     }
@@ -141,9 +135,9 @@ void on_ref_frame() try {
             }
         }
     });
-} catch(const std::exception& e) {
+} catch (const std::exception& e) {
     OutputDebugStringA(e.what());
-    //g_ref->functions->log_error(e.what());
+    // g_ref->functions->log_error(e.what());
 }
 
 extern "C" __declspec(dllexport) void reframework_plugin_required_version(REFrameworkPluginVersion* version) {

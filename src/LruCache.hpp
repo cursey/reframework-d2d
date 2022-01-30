@@ -1,11 +1,12 @@
-#include <unordered_map>
-#include <tuple>
 #include <list>
 #include <optional>
+#include <tuple>
+#include <unordered_map>
 
 template <typename KeyT, typename ValueT> class LruCache {
 public:
-    LruCache(size_t max_size) : m_max_size{max_size} {}
+    LruCache(size_t max_size)
+        : m_max_size{max_size} {}
 
     void put(const KeyT& key, const ValueT& value) {
         auto it = m_cache.find(key);
@@ -38,9 +39,7 @@ public:
         return std::cref(std::get<1>(*(it->second)));
     }
 
-    auto has(const KeyT& key) {
-        return m_cache.find(key) != m_cache.end();
-    }
+    auto has(const KeyT& key) { return m_cache.find(key) != m_cache.end(); }
 
     auto size() const { return m_cache.size(); }
 

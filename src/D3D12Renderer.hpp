@@ -1,6 +1,6 @@
-#include <memory>
-#include <functional>
 #include <chrono>
+#include <functional>
+#include <memory>
 
 #include <d3d11.h>
 #include <d3d11on12.h>

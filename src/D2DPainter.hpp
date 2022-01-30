@@ -1,11 +1,11 @@
 #include <string>
-#include <vector>
 #include <tuple>
+#include <vector>
 
 #include <d2d1_3.h>
 #include <d3d11.h>
-#include <dxgi.h>
 #include <dwrite.h>
+#include <dxgi.h>
 #include <wrl.h>
 
 #include "LruCache.hpp"
@@ -57,4 +57,3 @@ private:
 
     Font& get_font(int font);
 };
-
