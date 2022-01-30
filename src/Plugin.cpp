@@ -6,11 +6,12 @@
 
 #include "D3D12Renderer.hpp"
 
-const REFrameworkPluginInitializeParam* g_ref{};
+using API = reframework::API;
+
 std::unique_ptr<D3D12Renderer> g_d3d12{};
 D2DPainter* g_d2d{};
-std::vector<sol::function> g_draw_fns{};
-std::vector<sol::function> g_init_fns{};
+std::vector<sol::protected_function> g_draw_fns{};
+std::vector<sol::protected_function> g_init_fns{};
 lua_State* g_lua{};
 bool g_needs_init{};
 
@@ -23,7 +24,7 @@ void on_ref_lua_state_created(lua_State* l) try {
     detail["get_max_updaterate"] = []() { return g_d3d12->get_d2d_max_updaterate(); };
     detail["set_max_updaterate"] = [](double fps) { g_d3d12->set_d2d_max_updaterate(fps); };
     d2d["detail"] = detail;
-    d2d["register"] = [](sol::function init_fn, sol::function draw_fn) {
+    d2d["register"] = [](sol::protected_function init_fn, sol::protected_function draw_fn) {
         g_init_fns.emplace_back(init_fn);
         g_draw_fns.emplace_back(draw_fn);
         g_needs_init = true;
@@ -75,8 +76,7 @@ void on_ref_lua_state_created(lua_State* l) try {
     g_needs_init = true;
 } catch (const std::exception& e) {
     OutputDebugStringA(e.what());
-    g_ref->functions->log_error(e.what());
-    throw e;
+    API::get()->log_error("[reframework-d2d] [on_ref_lua_state_created] %s", e.what());
 }
 
 void on_ref_lua_state_destroyed(lua_State* l) try { 
@@ -85,8 +85,7 @@ void on_ref_lua_state_destroyed(lua_State* l) try {
     g_lua = nullptr;
 } catch (const std::exception& e) {
     OutputDebugStringA(e.what());
-    g_ref->functions->log_error(e.what());
-    throw e;
+    API::get()->log_error("[reframework-d2d] [on_ref_lua_state_destroyed] %s", e.what());
 }
 
 void on_ref_device_reset() try {
@@ -94,8 +93,7 @@ void on_ref_device_reset() try {
     g_d3d12.reset();
 } catch(const std::exception& e) {
     OutputDebugStringA(e.what());
-    g_ref->functions->log_error(e.what());
-    throw e;
+    API::get()->log_error("[reframework-d2d] [on_ref_lua_device_reset] %s", e.what());
 }
 
 void on_ref_frame() try {
@@ -104,41 +102,44 @@ void on_ref_frame() try {
     }
 
     if (g_d3d12 == nullptr) {
-        g_d3d12 = std::make_unique<D3D12Renderer>((IDXGISwapChain*)g_ref->renderer_data->swapchain,
-            (ID3D12Device*)g_ref->renderer_data->device, (ID3D12CommandQueue*)g_ref->renderer_data->command_queue);
+        auto renderer_data = API::get()->param()->renderer_data;
+        g_d3d12 = std::make_unique<D3D12Renderer>((IDXGISwapChain*)renderer_data->swapchain,
+            (ID3D12Device*)renderer_data->device, (ID3D12CommandQueue*)renderer_data->command_queue);
         g_d2d = g_d3d12->get_d2d().get();
         g_needs_init = true;
     }
 
     if (g_needs_init) {
         g_d2d->clear_fonts();
-        g_ref->functions->lock_lua();
+        auto _ = API::LuaLock{};
 
         for (const auto& init_fn : g_init_fns) {
-            auto result = init_fn();
+            try {
+                auto result = init_fn();
 
-            if (!result.valid()) {
-                sol::script_default_on_error(g_lua, std::move(result));
+                if (!result.valid()) {
+                    sol::script_throw_on_error(g_lua, std::move(result));
+                }
+            } catch (const std::exception& e) {
+                MessageBox(nullptr, e.what(), "[reframework-d2d] [init_fn] error", MB_ICONERROR | MB_OK);
+                OutputDebugStringA(e.what());
+                API::get()->log_error("[reframework-d2d] [on_ref_lua_device_reset] %s", e.what());
             }
         }
-
-        g_ref->functions->unlock_lua();
 
         g_needs_init = false;
     }
 
     g_d3d12->render([](D2DPainter& d2d) {
-        g_ref->functions->lock_lua();
+        auto _ = API::LuaLock{};
 
         for (const auto& draw_fn : g_draw_fns) {
             auto result = draw_fn();
 
             if (!result.valid()) {
-                sol::script_default_on_error(g_lua, std::move(result));
+                sol::script_throw_on_error(g_lua, std::move(result));
             }
         }
-
-        g_ref->functions->unlock_lua();
     });
 } catch(const std::exception& e) {
     OutputDebugStringA(e.what());
@@ -156,7 +157,7 @@ extern "C" __declspec(dllexport) bool reframework_plugin_initialize(const REFram
         return false;
     }
 
-    g_ref = param;
+    reframework::API::initialize(param);
 
     param->functions->on_lua_state_created(on_ref_lua_state_created);
     param->functions->on_lua_state_destroyed(on_ref_lua_state_destroyed);
