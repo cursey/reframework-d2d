@@ -165,23 +165,3 @@ Returns the width and height of the rendered text.
 
 #### Params
 * `text` the text to measure
-
----
-
-### `d2d.Font:name()`
-Returns the name of the font.
-
----
-
-### `d2d.Font:size()`
-Returns the size of the font.
-
----
-
-### `d2d.Font:bold()`
-Returns true if the font is a bold. False otherwise.
-
----
-
-### `d2d.Font.italic()`
-Returns true if the font is italic. False otherwise.

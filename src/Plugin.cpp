@@ -38,11 +38,7 @@ void on_ref_lua_state_created(lua_State* l) try {
 
             return std::make_unique<D2DFont>(g_d2d->dwrite(), name, size, bold, italic);
         },
-        "measure", &D2DFont::measure,
-        "name", &D2DFont::name,
-        "size", &D2DFont::size,
-        "bold", &D2DFont::bold,
-        "italic", &D2DFont::italic);
+        "measure", &D2DFont::measure);
 
     detail["get_max_updaterate"] = []() { return g_d3d12->get_d2d_max_updaterate(); };
     detail["set_max_updaterate"] = [](double fps) { g_d3d12->set_d2d_max_updaterate(fps); };

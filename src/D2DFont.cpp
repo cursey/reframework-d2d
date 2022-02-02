@@ -4,18 +4,14 @@
 
 #include "D2DFont.hpp"
 
-D2DFont::D2DFont(ComPtr<IDWriteFactory> dwrite, std::string name, int size, bool bold, bool italic)
-    : m_dwrite{dwrite},
-    m_name{std::move(name)},
-    m_size{size},
-    m_bold{bold},
-    m_italic{italic}
+D2DFont::D2DFont(ComPtr<IDWriteFactory> dwrite, const std::string& name, int size, bool bold, bool italic)
+    : m_dwrite{dwrite}
 {
     std::wstring wide_name{};
-    utf8::utf8to16(m_name.begin(), m_name.end(), std::back_inserter(wide_name));
+    utf8::utf8to16(name.begin(), name.end(), std::back_inserter(wide_name));
 
-    if (FAILED(m_dwrite->CreateTextFormat(wide_name.c_str(), nullptr, m_bold ? DWRITE_FONT_WEIGHT_BOLD : DWRITE_FONT_WEIGHT_NORMAL,
-            m_italic ? DWRITE_FONT_STYLE_ITALIC : DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, size, L"en-us", &m_format))) {
+    if (FAILED(m_dwrite->CreateTextFormat(wide_name.c_str(), nullptr, bold ? DWRITE_FONT_WEIGHT_BOLD : DWRITE_FONT_WEIGHT_NORMAL,
+            italic ? DWRITE_FONT_STYLE_ITALIC : DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, size, L"en-us", &m_format))) {
         throw std::runtime_error{"Failed to create DWrite text format"};
     }
 
