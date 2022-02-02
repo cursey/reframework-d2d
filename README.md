@@ -77,7 +77,7 @@ You must call this function from the `init_fn` passed to `d2d.register`. That's 
 Draws text on the screen at the position you supply using a font resource you've created.
 
 #### Params
-* `font` the font resource you've created in your `init_fn` via `d2d.create_font`
+* `font` the font resource you've created in your `init_fn` via `d2d.Font.new(...)`
 * `text` the text to draw
 * `x` the horizontal position on the screen
 * `y` the vertical position on the screen
