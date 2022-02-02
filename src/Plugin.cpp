@@ -40,7 +40,9 @@ void on_ref_lua_state_created(lua_State* l) try {
         },
         "measure", &D2DFont::measure);
 
-    d2d.new_usertype<D2DImage>("Image", sol::meta_function::construct, [](const char* filepath) {
+    d2d.new_usertype<D2DImage>(
+        "Image", sol::meta_function::construct,
+        [](const char* filepath) {
             std::string modpath{};
 
             modpath.resize(1024, 0);
@@ -52,7 +54,7 @@ void on_ref_lua_state_created(lua_State* l) try {
             std::filesystem::create_directories(images_path);
 
             return std::make_unique<D2DImage>(g_d2d->wic(), g_d2d->context(), image_path);
-        }, 
+        },
         "size", &D2DImage::size);
 
     detail["get_max_updaterate"] = []() { return g_d3d12->get_d2d_max_updaterate(); };
@@ -77,7 +79,9 @@ void on_ref_lua_state_created(lua_State* l) try {
 
         return std::make_unique<D2DFont>(g_d2d->dwrite(), name, size, bold, italic);
     };
-    d2d["text"] = [](std::unique_ptr<D2DFont>& font, const char* text, float x, float y, unsigned int color) { g_d2d->text(font, text, x, y, color); };
+    d2d["text"] = [](std::unique_ptr<D2DFont>& font, const char* text, float x, float y, unsigned int color) {
+        g_d2d->text(font, text, x, y, color);
+    };
     d2d["measure_text"] = [](sol::this_state s, std::unique_ptr<D2DFont>& font, const char* text) {
         auto [w, h] = font->measure(text);
         sol::variadic_results results{};

@@ -10,7 +10,7 @@ D2DImage::D2DImage(ComPtr<IWICImagingFactory> wic, ComPtr<ID2D1DeviceContext> co
     }
 
     ComPtr<IWICBitmapFrameDecode> frame{};
-    
+
     if (FAILED(decoder->GetFrame(0, &frame))) {
         throw std::runtime_error{"Failed to get frame from WIC decoder"};
     }
@@ -21,7 +21,8 @@ D2DImage::D2DImage(ComPtr<IWICImagingFactory> wic, ComPtr<ID2D1DeviceContext> co
         throw std::runtime_error{"Failed to create WIC format converter"};
     }
 
-    if (FAILED(converter->Initialize(frame.Get(), GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, nullptr, 0.0f, WICBitmapPaletteTypeMedianCut))) {
+    if (FAILED(converter->Initialize(
+            frame.Get(), GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, nullptr, 0.0f, WICBitmapPaletteTypeMedianCut))) {
         throw std::runtime_error{"Failed to initialize WIC format converter"};
     }
 

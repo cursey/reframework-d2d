@@ -1,7 +1,7 @@
+#include <memory>
 #include <string>
 #include <tuple>
 #include <vector>
-#include <memory>
 
 #include <d2d1_3.h>
 #include <d3d11.h>

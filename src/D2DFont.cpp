@@ -5,8 +5,7 @@
 #include "D2DFont.hpp"
 
 D2DFont::D2DFont(ComPtr<IDWriteFactory> dwrite, const std::string& name, int size, bool bold, bool italic)
-    : m_dwrite{dwrite}
-{
+    : m_dwrite{dwrite} {
     std::wstring wide_name{};
     utf8::utf8to16(name.begin(), name.end(), std::back_inserter(wide_name));
 
@@ -14,7 +13,6 @@ D2DFont::D2DFont(ComPtr<IDWriteFactory> dwrite, const std::string& name, int siz
             italic ? DWRITE_FONT_STYLE_ITALIC : DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, size, L"en-us", &m_format))) {
         throw std::runtime_error{"Failed to create DWrite text format"};
     }
-
 }
 
 D2DFont::ComPtr<IDWriteTextLayout> D2DFont::layout(const std::string& text) {

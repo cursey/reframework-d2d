@@ -11,7 +11,7 @@
 
 class D2DFont {
 public:
-    template<typename T> using ComPtr = Microsoft::WRL::ComPtr<T>;
+    template <typename T> using ComPtr = Microsoft::WRL::ComPtr<T>;
 
     D2DFont(ComPtr<IDWriteFactory> dwrite, const std::string& name, int size, bool bold, bool italic);
 

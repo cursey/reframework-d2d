@@ -67,7 +67,6 @@ void D2DPainter::text(std::unique_ptr<D2DFont>& font, const std::string& text, f
     m_context->DrawTextLayout({x, y}, font->layout(text).Get(), m_brush.Get());
 }
 
-
 void D2DPainter::fill_rect(float x, float y, float w, float h, unsigned int color) {
     set_color(color);
     m_context->FillRectangle({x, y, x + w, y + h}, m_brush.Get());
