@@ -18,10 +18,33 @@ bool g_needs_init{};
 void on_ref_lua_state_created(lua_State* l) try {
     g_lua = l;
     sol::state_view lua{l};
+
     auto d2d = lua.create_table();
     auto detail = lua.create_table();
 
-    detail["get_max_updaterate"] = []() { return g_d3d12->get_d2d_max_updaterate(); };
+    d2d.new_usertype<D2DFont>(
+        "Font", sol::meta_function::construct,
+        [](const char* name, int size, sol::object bold_obj, sol::object italic_obj) {
+            auto bold = false;
+            auto italic = false;
+
+            if (bold_obj.is<bool>()) {
+                bold = bold_obj.as<bool>();
+            }
+
+            if (italic_obj.is<bool>()) {
+                italic = italic_obj.as<bool>();
+            }
+
+            return std::make_unique<D2DFont>(g_d2d->dwrite(), name, size, bold, italic);
+        },
+        "measure", &D2DFont::measure,
+        "name", &D2DFont::name,
+        "size", &D2DFont::size,
+        "bold", &D2DFont::bold,
+        "italic", &D2DFont::italic);
+
+        detail["get_max_updaterate"] = []() { return g_d3d12->get_d2d_max_updaterate(); };
     detail["set_max_updaterate"] = [](double fps) { g_d3d12->set_d2d_max_updaterate(fps); };
     d2d["detail"] = detail;
     d2d["register"] = [](sol::protected_function init_fn, sol::protected_function draw_fn) {
@@ -43,8 +66,8 @@ void on_ref_lua_state_created(lua_State* l) try {
 
         return g_d2d->create_font(name, size, bold, italic);
     };
-    d2d["text"] = [](int font, const char* text, float x, float y, unsigned int color) { g_d2d->text(font, text, x, y, color); };
-    d2d["measure_text"] = [](sol::this_state s, int font, const char* text) {
+    d2d["text"] = [](std::unique_ptr<D2DFont>& font, const char* text, float x, float y, unsigned int color) { g_d2d->text(font, text, x, y, color); };
+    d2d["measure_text"] = [](sol::this_state s, std::unique_ptr<D2DFont>& font, const char* text) {
         auto [w, h] = g_d2d->measure_text(font, text);
         sol::variadic_results results{};
         results.push_back(sol::make_object(s, w));
@@ -104,7 +127,6 @@ void on_ref_frame() try {
     }
 
     if (g_needs_init) {
-        g_d2d->clear_fonts();
         auto _ = API::LuaLock{};
 
         for (const auto& init_fn : g_init_fns) {

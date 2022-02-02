@@ -17,7 +17,7 @@ local x = 0
 local y = 0
 
 d2d.register(function()
-    font = d2d.create_font("Tahoma", 50)
+    font = d2d.Font.new("Tahoma", 50)
 end,
 function()
     d2d.text(font, "Hello World!", 0, 0, 0xFFFFFFFF)
@@ -28,7 +28,7 @@ function()
     d2d.text(font, "😁💕😒😘🤣😂😊🤔🥴👈👉🤦‍♀️", 0, 250, 0xFFFFFF00) -- emoji
 
     local str = "This is only a test"
-    local w, h = d2d.measure_text(font, str)
+    local w, h = font:measure(str)
 
     d2d.fill_rect(500, 100, w, h, 0xFFFFFFFF)
     d2d.text(font, str, 500, 100, 0xFF000000)
@@ -60,7 +60,9 @@ Registers your script with d2d allowing you to create d2d resources and draw usi
 
 ---
 
-### `d2d.create_font(name, size, [bold], [italic])`
+### `d2d.create_font(name, size, [bold], [italic])` **DEPRECATED**
+**This function has been deprecated in favor of `d2d.Font.new(...)`**
+
 Creates a font resource.
 
 #### Params
@@ -71,6 +73,7 @@ Creates a font resource.
 
 #### Notes
 You must call this function from the `init_fn` passed to `d2d.register`. That's the only valid place to call it.
+
 
 ---
 
@@ -86,7 +89,9 @@ Draws text on the screen at the position you supply using a font resource you've
 
 ---
 
-### `d2d.measure_text(font, text)`
+### `d2d.measure_text(font, text)` **DEPRECATED**
+**This function has been deprecated in favor of `d2d.Font:measure(...)`**
+
 Returns the width and height of the rendered text
 
 #### Params
@@ -135,3 +140,48 @@ Draws a line between two points
 
 ### `d2d.surface_size()`
 Returns the width and height of the drawable surface. This is essentially the screen or window size of the game.
+
+---
+
+## Type: `d2d.Font`
+Represents a d2d font resource.
+
+### `d2d.Font.new(name, size, [bold], [italic])`
+Creates a font resource.
+
+#### Params
+* `name` the font family name
+* `size` the size of the created font
+* `bold` an optional boolean value to make the font bold
+* `italic` and optional boolean value to make the font italic
+
+#### Notes
+You must call this function from the `init_fn` passed to `d2d.register`. That's the only valid place to call it.
+
+---
+
+### `d2d.Font:measure(text)`
+Returns the width and height of the rendered text.
+
+#### Params
+* `text` the text to measure
+
+---
+
+### `d2d.Font:name()`
+Returns the name of the font.
+
+---
+
+### `d2d.Font:size()`
+Returns the size of the font.
+
+---
+
+### `d2d.Font:bold()`
+Returns true if the font is a bold. False otherwise.
+
+---
+
+### `d2d.Font.italic()`
+Returns true if the font is italic. False otherwise.

@@ -58,47 +58,17 @@ void D2DPainter::set_color(unsigned int color) {
     m_brush->SetColor({r, g, b, a});
 }
 
-int D2DPainter::create_font(std::string name, int size, bool bold, bool italic) {
-    // Look for a font already matching the description.
-    for (int i = 0; i < m_fonts.size(); i++) {
-        if (m_fonts[i].name == name && m_fonts[i].size == size && m_fonts[i].bold == bold && m_fonts[i].italic == italic) {
-            return i;
-        }
-    }
-
-    // Create a new font.
-    Font font{};
-    font.name = std::move(name);
-    font.size = size;
-    font.bold = bold;
-    font.italic = italic;
-
-    std::wstring wide_name{};
-    utf8::utf8to16(font.name.begin(), font.name.end(), std::back_inserter(wide_name));
-
-    if (FAILED(m_dwrite->CreateTextFormat(wide_name.c_str(), nullptr, bold ? DWRITE_FONT_WEIGHT_BOLD : DWRITE_FONT_WEIGHT_NORMAL,
-            italic ? DWRITE_FONT_STYLE_ITALIC : DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, size, L"en-us", &font.text_format))) {
-        throw std::runtime_error{"Failed to create DWrite text format"};
-    }
-
-    m_fonts.emplace_back(std::move(font));
-
-    return m_fonts.size() - 1;
+std::unique_ptr<D2DFont> D2DPainter::create_font(std::string name, int size, bool bold, bool italic) {
+    return std::make_unique<D2DFont>(m_dwrite, std::move(name), size, bold, italic);
 }
 
-void D2DPainter::text(int font, const std::string& text, float x, float y, unsigned int color) {
+void D2DPainter::text(std::unique_ptr<D2DFont>& font, const std::string& text, float x, float y, unsigned int color) {
     set_color(color);
-    auto layout = get_font(font).get_layout(m_dwrite.Get(), text);
-    m_context->DrawTextLayout({x, y}, layout.Get(), m_brush.Get());
+    m_context->DrawTextLayout({x, y}, font->layout(text).Get(), m_brush.Get());
 }
 
-std::tuple<float, float> D2DPainter::measure_text(int font, const std::string& text) {
-    auto layout = get_font(font).get_layout(m_dwrite.Get(), text);
-    DWRITE_TEXT_METRICS metrics{};
-
-    layout->GetMetrics(&metrics);
-
-    return {metrics.width, metrics.height};
+std::tuple<float, float> D2DPainter::measure_text(std::unique_ptr<D2DFont>& font, const std::string& text) {
+    return font->measure(text);
 }
 
 void D2DPainter::fill_rect(float x, float y, float w, float h, unsigned int color) {
@@ -114,31 +84,4 @@ void D2DPainter::outline_rect(float x, float y, float w, float h, float thicknes
 void D2DPainter::line(float x1, float y1, float x2, float y2, float thickness, unsigned int color) {
     set_color(color);
     m_context->DrawLine({x1, y1}, {x2, y2}, m_brush.Get(), thickness);
-}
-
-D2DPainter::Font& D2DPainter::get_font(int font) {
-    if (font < 0 || font >= m_fonts.size()) {
-        throw std::runtime_error{"Invalid font"};
-    }
-
-    return m_fonts[font];
-}
-
-D2DPainter::ComPtr<IDWriteTextLayout> D2DPainter::Font::get_layout(IDWriteFactory* dwrite, const std::string& text) {
-    if (auto layout = text_layouts.get(text)) {
-        return (*layout).get();
-    }
-
-    ComPtr<IDWriteTextLayout> layout{};
-    std::wstring wide_text{};
-
-    utf8::utf8to16(text.begin(), text.end(), std::back_inserter(wide_text));
-
-    if (FAILED(dwrite->CreateTextLayout(wide_text.c_str(), wide_text.size(), text_format.Get(), 10000.0f, 10000.0f, &layout))) {
-        throw std::runtime_error{"Failed to create dwrite text layout"};
-    }
-
-    text_layouts.put(text, layout);
-
-    return layout;
 }

@@ -69,9 +69,11 @@ set(CMKR_TARGET reframework-d2d)
 set(reframework-d2d_SOURCES "")
 
 list(APPEND reframework-d2d_SOURCES
+	"src/D2DFont.cpp"
 	"src/D2DPainter.cpp"
 	"src/D3D12Renderer.cpp"
 	"src/Plugin.cpp"
+	"src/D2DFont.hpp"
 	"src/D2DPainter.hpp"
 	"src/D3D12Renderer.hpp"
 	"src/D3D12Shaders.hpp"
