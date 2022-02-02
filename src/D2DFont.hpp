@@ -22,8 +22,6 @@ public:
     auto size() const { return m_size; }
     auto bold() const { return m_bold; }
     auto italic() const { return m_italic; }
-    const auto& text_format() const { return m_text_format; }
-    auto& text_layouts() const { return m_text_layouts; }
 
 private:
     ComPtr<IDWriteFactory> m_dwrite{};
@@ -32,6 +30,6 @@ private:
     int m_size{};
     bool m_bold{};
     bool m_italic{};
-    ComPtr<IDWriteTextFormat> m_text_format{};
-    LruCache<std::string, ComPtr<IDWriteTextLayout>> m_text_layouts{100};
+    ComPtr<IDWriteTextFormat> m_format{};
+    LruCache<std::string, ComPtr<IDWriteTextLayout>> m_layouts{100};
 };
