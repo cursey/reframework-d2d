@@ -7,9 +7,11 @@
 #include <d3d11.h>
 #include <dwrite.h>
 #include <dxgi.h>
+#include <wincodec.h>
 #include <wrl.h>
 
 #include "D2DFont.hpp"
+#include "D2DImage.hpp"
 
 class D2DPainter {
 public:
@@ -26,10 +28,14 @@ public:
     void fill_rect(float x, float y, float w, float h, unsigned int color);
     void outline_rect(float x, float y, float w, float h, float thickness, unsigned int color);
     void line(float x1, float y1, float x2, float y2, float thickness, unsigned int color);
+    void image(std::unique_ptr<D2DImage>& image, float x, float y);
+    void image(std::unique_ptr<D2DImage>& image, float x, float y, float w, float h);
 
     auto surface_size() const { return std::make_tuple(m_rt_desc.Width, m_rt_desc.Height); }
 
+    const auto& context() const { return m_context; }
     const auto& dwrite() const { return m_dwrite; }
+    const auto& wic() const { return m_wic; }
 
 private:
     ComPtr<ID2D1Factory3> m_d2d1{};
@@ -41,4 +47,5 @@ private:
     ComPtr<ID2D1SolidColorBrush> m_brush{};
 
     ComPtr<IDWriteFactory> m_dwrite{};
+    ComPtr<IWICImagingFactory> m_wic{};
 };

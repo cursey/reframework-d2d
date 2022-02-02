@@ -40,6 +40,21 @@ void on_ref_lua_state_created(lua_State* l) try {
         },
         "measure", &D2DFont::measure);
 
+    d2d.new_usertype<D2DImage>("Image", sol::meta_function::construct, [](const char* filepath) {
+            std::string modpath{};
+
+            modpath.resize(1024, 0);
+            modpath.resize(GetModuleFileName(nullptr, modpath.data(), modpath.size()));
+
+            auto images_path = std::filesystem::path{modpath}.parent_path() / "reframework" / "images";
+            auto image_path = images_path / filepath;
+
+            std::filesystem::create_directories(images_path);
+
+            return std::make_unique<D2DImage>(g_d2d->wic(), g_d2d->context(), image_path);
+        }, 
+        "size", &D2DImage::size);
+
     detail["get_max_updaterate"] = []() { return g_d3d12->get_d2d_max_updaterate(); };
     detail["set_max_updaterate"] = [](double fps) { g_d3d12->set_d2d_max_updaterate(fps); };
     d2d["detail"] = detail;
@@ -77,6 +92,19 @@ void on_ref_lua_state_created(lua_State* l) try {
     };
     d2d["line"] = [](float x1, float y1, float x2, float y2, float thickness, unsigned int color) {
         g_d2d->line(x1, y1, x2, y2, thickness, color);
+    };
+    d2d["image"] = [](std::unique_ptr<D2DImage>& image, float x, float y, sol::object w_obj, sol::object h_obj) {
+        auto [w, h] = image->size();
+
+        if (w_obj.is<float>()) {
+            w = w_obj.as<float>();
+        }
+
+        if (h_obj.is<float>()) {
+            h = h_obj.as<float>();
+        }
+
+        g_d2d->image(image, x, y, w, h);
     };
     d2d["surface_size"] = [](sol::this_state s) {
         auto [w, h] = g_d2d->surface_size();

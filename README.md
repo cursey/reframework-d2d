@@ -13,11 +13,11 @@ cmake --build build --config RelWithDebInfo
 ## Example
 ```lua
 local font = nil
-local x = 0
-local y = 0
+local image = nil
 
 d2d.register(function()
     font = d2d.Font.new("Tahoma", 50)
+    image = d2d.Image.new("test.png") -- Loads <gamedir>/reframework/images/test.png
 end,
 function()
     d2d.text(font, "Hello World!", 0, 0, 0xFFFFFFFF)
@@ -34,18 +34,14 @@ function()
     d2d.text(font, str, 500, 100, 0xFF000000)
     d2d.outline_rect(500, 100, w, h, 5, 0xFF00FFFF)
 
-    d2d.fill_rect(x, y, 50, 50, 0xFFFF0000)
+    local screen_w, screen_h = d2d.surface_size()
+    local img_w, img_h = image:size()
 
-    x = x + 10
-    y = y + 10
-    w, h = d2d.surface_size()
+    -- Draw image at the bottom right corner of the screen in its default size.
+    d2d.image(image, screen_w - img_w, screen_h - img_h) 
 
-    if x > w then
-        x = 0
-    end
-    if y > h then
-        y = 0
-    end
+    -- Draw image at the bottom left corner of the screen but scaled to 50x50.
+    d2d.image(image, 0, screen_h - 50, 50, 50)
 end)
 ```
 
@@ -95,7 +91,7 @@ Draws text on the screen at the position you supply using a font resource you've
 Returns the width and height of the rendered text
 
 #### Params
-* `font` the font resource you've created in your `init_fn` via `d2d.create_font`
+* `font` the font resource you've created in your `init_fn` via `d2d.Font.new(...)`
 * `text` the text to measure
 
 ---
@@ -138,6 +134,21 @@ Draws a line between two points
 
 ---
 
+### `d2d.image(image, x, y, [w], [h])`
+Draws an image at the specified position, optionally scaled.
+
+#### Params
+* `image` the image resource loaded in your `init_fn` via `d2d.Image.new(...)`
+* `x` the horizontal position on the screen
+* `y` the vertical position on the screen
+* `w` the optional width to scale the image by
+* `h` the optional height to scale the image by
+
+#### Notes
+If the `w` and `h` parameters are omitted, the image will be drawn at its natural size.
+
+---
+
 ### `d2d.surface_size()`
 Returns the width and height of the drawable surface. This is essentially the screen or window size of the game.
 
@@ -165,3 +176,19 @@ Returns the width and height of the rendered text.
 
 #### Params
 * `text` the text to measure
+
+---
+
+## Type: `d2d.Image`
+Represents a d2d image resource.
+
+### `d2d.Image.new(filepath)`
+Loads an image resource from `<gamedir>\reframework\images\<filepath>`.
+
+#### Params
+* `filepath` A file path for the image to load
+
+---
+
+### `d2d.Image:size()`
+Returns the width and height of the image in pixels.

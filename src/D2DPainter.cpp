@@ -38,6 +38,10 @@ D2DPainter::D2DPainter(ID3D11Device* device, IDXGISurface* surface) {
     if (FAILED(DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), &m_dwrite))) {
         throw std::runtime_error{"Failed to create DWrite factory"};
     }
+
+    if (FAILED(CoCreateInstance(CLSID_WICImagingFactory1, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&m_wic)))) {
+        throw std::runtime_error{"Failed to create WIC factory"};
+    }
 }
 
 void D2DPainter::begin() {
@@ -77,4 +81,13 @@ void D2DPainter::outline_rect(float x, float y, float w, float h, float thicknes
 void D2DPainter::line(float x1, float y1, float x2, float y2, float thickness, unsigned int color) {
     set_color(color);
     m_context->DrawLine({x1, y1}, {x2, y2}, m_brush.Get(), thickness);
+}
+
+void D2DPainter::image(std::unique_ptr<D2DImage>& image, float x, float y) {
+    auto [w, h] = image->size();
+    m_context->DrawBitmap(image->bitmap().Get(), {x, y, x + w, y + h});
+}
+
+void D2DPainter::image(std::unique_ptr<D2DImage>& image, float x, float y, float w, float h) {
+    m_context->DrawBitmap(image->bitmap().Get(), {x, y, x + w, y + h});
 }
