@@ -157,6 +157,8 @@ Returns the width and height of the drawable surface. This is essentially the sc
 ## Type: `d2d.Font`
 Represents a d2d font resource.
 
+---
+
 ### `d2d.Font.new(name, size, [bold], [italic])`
 Creates a font resource.
 
@@ -181,6 +183,8 @@ Returns the width and height of the rendered text.
 
 ## Type: `d2d.Image`
 Represents a d2d image resource.
+
+---
 
 ### `d2d.Image.new(filepath)`
 Loads an image resource from `<gamedir>\reframework\images\<filepath>`.
