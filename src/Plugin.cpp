@@ -44,7 +44,7 @@ void on_ref_lua_state_created(lua_State* l) try {
         "bold", &D2DFont::bold,
         "italic", &D2DFont::italic);
 
-        detail["get_max_updaterate"] = []() { return g_d3d12->get_d2d_max_updaterate(); };
+    detail["get_max_updaterate"] = []() { return g_d3d12->get_d2d_max_updaterate(); };
     detail["set_max_updaterate"] = [](double fps) { g_d3d12->set_d2d_max_updaterate(fps); };
     d2d["detail"] = detail;
     d2d["register"] = [](sol::protected_function init_fn, sol::protected_function draw_fn) {
@@ -64,11 +64,11 @@ void on_ref_lua_state_created(lua_State* l) try {
             italic = italic_obj.as<bool>();
         }
 
-        return g_d2d->create_font(name, size, bold, italic);
+        return std::make_unique<D2DFont>(g_d2d->dwrite(), name, size, bold, italic);
     };
     d2d["text"] = [](std::unique_ptr<D2DFont>& font, const char* text, float x, float y, unsigned int color) { g_d2d->text(font, text, x, y, color); };
     d2d["measure_text"] = [](sol::this_state s, std::unique_ptr<D2DFont>& font, const char* text) {
-        auto [w, h] = g_d2d->measure_text(font, text);
+        auto [w, h] = font->measure(text);
         sol::variadic_results results{};
         results.push_back(sol::make_object(s, w));
         results.push_back(sol::make_object(s, h));

@@ -22,9 +22,7 @@ public:
 
     void set_color(unsigned int color);
 
-    std::unique_ptr<D2DFont> create_font(std::string name, int size, bool bold = false, bool italic = false);
     void text(std::unique_ptr<D2DFont>& font, const std::string& text, float x, float y, unsigned int color);
-    std::tuple<float, float> measure_text(std::unique_ptr<D2DFont>& font, const std::string& text);
     void fill_rect(float x, float y, float w, float h, unsigned int color);
     void outline_rect(float x, float y, float w, float h, float thickness, unsigned int color);
     void line(float x1, float y1, float x2, float y2, float thickness, unsigned int color);

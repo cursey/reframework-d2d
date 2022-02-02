@@ -58,18 +58,11 @@ void D2DPainter::set_color(unsigned int color) {
     m_brush->SetColor({r, g, b, a});
 }
 
-std::unique_ptr<D2DFont> D2DPainter::create_font(std::string name, int size, bool bold, bool italic) {
-    return std::make_unique<D2DFont>(m_dwrite, std::move(name), size, bold, italic);
-}
-
 void D2DPainter::text(std::unique_ptr<D2DFont>& font, const std::string& text, float x, float y, unsigned int color) {
     set_color(color);
     m_context->DrawTextLayout({x, y}, font->layout(text).Get(), m_brush.Get());
 }
 
-std::tuple<float, float> D2DPainter::measure_text(std::unique_ptr<D2DFont>& font, const std::string& text) {
-    return font->measure(text);
-}
 
 void D2DPainter::fill_rect(float x, float y, float w, float h, unsigned int color) {
     set_color(color);
