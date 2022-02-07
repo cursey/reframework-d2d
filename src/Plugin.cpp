@@ -5,6 +5,7 @@
 #include <sol/sol.hpp>
 
 #include "D3D12Renderer.hpp"
+#include "DrawList.hpp"
 
 using API = reframework::API;
 
@@ -14,6 +15,8 @@ std::vector<sol::protected_function> g_draw_fns{};
 std::vector<sol::protected_function> g_init_fns{};
 lua_State* g_lua{};
 bool g_needs_init{};
+DrawList g_drawlist{};
+DrawList::CommandLock* g_cmds{};
 
 void on_ref_lua_state_created(lua_State* l) try {
     g_lua = l;
@@ -36,7 +39,7 @@ void on_ref_lua_state_created(lua_State* l) try {
                 italic = italic_obj.as<bool>();
             }
 
-            return std::make_unique<D2DFont>(g_d2d->dwrite(), name, size, bold, italic);
+            return std::make_shared<D2DFont>(g_d2d->dwrite(), name, size, bold, italic);
         },
         "measure", &D2DFont::measure);
 
@@ -53,7 +56,7 @@ void on_ref_lua_state_created(lua_State* l) try {
 
             std::filesystem::create_directories(images_path);
 
-            return std::make_unique<D2DImage>(g_d2d->wic(), g_d2d->context(), image_path);
+            return std::make_shared<D2DImage>(g_d2d->wic(), g_d2d->context(), image_path);
         },
         "size", &D2DImage::size);
 
@@ -77,27 +80,27 @@ void on_ref_lua_state_created(lua_State* l) try {
             italic = italic_obj.as<bool>();
         }
 
-        return std::make_unique<D2DFont>(g_d2d->dwrite(), name, size, bold, italic);
+        return std::make_shared<D2DFont>(g_d2d->dwrite(), name, size, bold, italic);
     };
-    d2d["text"] = [](std::unique_ptr<D2DFont>& font, const char* text, float x, float y, unsigned int color) {
-        g_d2d->text(font, text, x, y, color);
+    d2d["text"] = [](std::shared_ptr<D2DFont>& font, const char* text, float x, float y, unsigned int color) {
+        g_cmds->text(font, text, x, y, color);
     };
-    d2d["measure_text"] = [](sol::this_state s, std::unique_ptr<D2DFont>& font, const char* text) {
+    d2d["measure_text"] = [](sol::this_state s, std::shared_ptr<D2DFont>& font, const char* text) {
         auto [w, h] = font->measure(text);
         sol::variadic_results results{};
         results.push_back(sol::make_object(s, w));
         results.push_back(sol::make_object(s, h));
         return results;
     };
-    d2d["fill_rect"] = [](float x, float y, float w, float h, unsigned int color) { g_d2d->fill_rect(x, y, w, h, color); };
-    d2d["filled_rect"] = [](float x, float y, float w, float h, unsigned int color) { g_d2d->fill_rect(x, y, w, h, color); };
+    d2d["fill_rect"] = [](float x, float y, float w, float h, unsigned int color) { g_cmds->fill_rect(x, y, w, h, color); };
+    d2d["filled_rect"] = d2d["fill_rect"];
     d2d["outline_rect"] = [](float x, float y, float w, float h, float thickness, unsigned int color) {
-        g_d2d->outline_rect(x, y, w, h, thickness, color);
+        g_cmds->outline_rect(x, y, w, h, thickness, color);
     };
     d2d["line"] = [](float x1, float y1, float x2, float y2, float thickness, unsigned int color) {
-        g_d2d->line(x1, y1, x2, y2, thickness, color);
+        g_cmds->line(x1, y1, x2, y2, thickness, color);
     };
-    d2d["image"] = [](std::unique_ptr<D2DImage>& image, float x, float y, sol::object w_obj, sol::object h_obj) {
+    d2d["image"] = [](std::shared_ptr<D2DImage>& image, float x, float y, sol::object w_obj, sol::object h_obj) {
         auto [w, h] = image->size();
 
         if (w_obj.is<float>()) {
@@ -108,7 +111,7 @@ void on_ref_lua_state_created(lua_State* l) try {
             h = h_obj.as<float>();
         }
 
-        g_d2d->image(image, x, y, w, h);
+        g_cmds->image(image, x, y, w, h);
     };
     d2d["surface_size"] = [](sol::this_state s) {
         auto [w, h] = g_d2d->surface_size();
@@ -125,6 +128,7 @@ void on_ref_lua_state_created(lua_State* l) try {
 }
 
 void on_ref_lua_state_destroyed(lua_State* l) try {
+    g_drawlist.acquire().commands.clear();
     g_draw_fns.clear();
     g_init_fns.clear();
     g_lua = nullptr;
@@ -134,6 +138,7 @@ void on_ref_lua_state_destroyed(lua_State* l) try {
 }
 
 void on_ref_device_reset() try {
+    g_drawlist.acquire().commands.clear();
     g_d2d = nullptr;
     g_d3d12.reset();
 } catch (const std::exception& e) {
@@ -152,6 +157,49 @@ void on_ref_frame() try {
             (ID3D12CommandQueue*)renderer_data->command_queue);
         g_d2d = g_d3d12->get_d2d().get();
         g_needs_init = true;
+    }
+
+    // Just return if we need init since its not ready yet.
+    if (g_needs_init) {
+        return;
+    }
+
+    g_d3d12->render([](D2DPainter& d2d) {
+        auto cmds_lock = g_drawlist.acquire();
+
+        for (auto&& cmd : cmds_lock.commands) {
+            switch (cmd.type) {
+            case DrawList::CommandType::TEXT:
+                g_d2d->text(cmd.font_resource, cmd.str, cmd.text.x, cmd.text.y, cmd.text.color);
+                break;
+
+            case DrawList::CommandType::FILL_RECT:
+                g_d2d->fill_rect(cmd.fill_rect.x, cmd.fill_rect.y, cmd.fill_rect.w, cmd.fill_rect.h, cmd.fill_rect.color);
+                break;
+
+            case DrawList::CommandType::OUTLINE_RECT:
+                g_d2d->outline_rect(cmd.outline_rect.x, cmd.outline_rect.y, cmd.outline_rect.w, cmd.outline_rect.h,
+                    cmd.outline_rect.thickness, cmd.outline_rect.color);
+                break;
+
+            case DrawList::CommandType::LINE:
+                g_d2d->line(cmd.line.x1, cmd.line.y1, cmd.line.x2, cmd.line.y2, cmd.line.thickness, cmd.line.color);
+                break;
+
+            case DrawList::CommandType::IMAGE:
+                g_d2d->image(cmd.image_resource, cmd.image.x, cmd.image.y, cmd.image.w, cmd.image.h);
+                break;
+            }
+        }
+    });
+} catch (const std::exception& e) {
+    OutputDebugStringA(e.what());
+    // g_ref->functions->log_error(e.what());
+}
+
+void on_begin_rendering() try {
+    if (g_d3d12 == nullptr) {
+        return;
     }
 
     if (g_needs_init) {
@@ -174,17 +222,21 @@ void on_ref_frame() try {
         g_needs_init = false;
     }
 
-    g_d3d12->render([](D2DPainter& d2d) {
-        auto _ = API::LuaLock{};
+    auto lua_lock = API::LuaLock{};
+    auto cmds_lock = g_drawlist.acquire();
+    g_cmds = &cmds_lock;
 
-        for (const auto& draw_fn : g_draw_fns) {
-            auto result = draw_fn();
+    cmds_lock.commands.clear();
 
-            if (!result.valid()) {
-                sol::script_throw_on_error(g_lua, std::move(result));
-            }
+    for (const auto& draw_fn : g_draw_fns) {
+        auto result = draw_fn();
+
+        if (!result.valid()) {
+            sol::script_throw_on_error(g_lua, std::move(result));
         }
-    });
+    }
+
+    g_cmds = nullptr;
 } catch (const std::exception& e) {
     OutputDebugStringA(e.what());
     // g_ref->functions->log_error(e.what());
@@ -207,6 +259,7 @@ extern "C" __declspec(dllexport) bool reframework_plugin_initialize(const REFram
     param->functions->on_lua_state_destroyed(on_ref_lua_state_destroyed);
     param->functions->on_frame(on_ref_frame);
     param->functions->on_device_reset(on_ref_device_reset);
+    param->functions->on_pre_application_entry("BeginRendering", on_begin_rendering);
 
     return true;
 }

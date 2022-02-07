@@ -24,12 +24,12 @@ public:
 
     void set_color(unsigned int color);
 
-    void text(std::unique_ptr<D2DFont>& font, const std::string& text, float x, float y, unsigned int color);
+    void text(std::shared_ptr<D2DFont>& font, const std::string& text, float x, float y, unsigned int color);
     void fill_rect(float x, float y, float w, float h, unsigned int color);
     void outline_rect(float x, float y, float w, float h, float thickness, unsigned int color);
     void line(float x1, float y1, float x2, float y2, float thickness, unsigned int color);
-    void image(std::unique_ptr<D2DImage>& image, float x, float y);
-    void image(std::unique_ptr<D2DImage>& image, float x, float y, float w, float h);
+    void image(std::shared_ptr<D2DImage>& image, float x, float y);
+    void image(std::shared_ptr<D2DImage>& image, float x, float y, float w, float h);
 
     auto surface_size() const { return std::make_tuple(m_rt_desc.Width, m_rt_desc.Height); }
 

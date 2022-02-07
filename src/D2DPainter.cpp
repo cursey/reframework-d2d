@@ -62,7 +62,7 @@ void D2DPainter::set_color(unsigned int color) {
     m_brush->SetColor({r, g, b, a});
 }
 
-void D2DPainter::text(std::unique_ptr<D2DFont>& font, const std::string& text, float x, float y, unsigned int color) {
+void D2DPainter::text(std::shared_ptr<D2DFont>& font, const std::string& text, float x, float y, unsigned int color) {
     set_color(color);
     m_context->DrawTextLayout({x, y}, font->layout(text).Get(), m_brush.Get());
 }
@@ -82,11 +82,11 @@ void D2DPainter::line(float x1, float y1, float x2, float y2, float thickness, u
     m_context->DrawLine({x1, y1}, {x2, y2}, m_brush.Get(), thickness);
 }
 
-void D2DPainter::image(std::unique_ptr<D2DImage>& image, float x, float y) {
+void D2DPainter::image(std::shared_ptr<D2DImage>& image, float x, float y) {
     auto [w, h] = image->size();
     m_context->DrawBitmap(image->bitmap().Get(), {x, y, x + w, y + h});
 }
 
-void D2DPainter::image(std::unique_ptr<D2DImage>& image, float x, float y, float w, float h) {
+void D2DPainter::image(std::shared_ptr<D2DImage>& image, float x, float y, float w, float h) {
     m_context->DrawBitmap(image->bitmap().Get(), {x, y, x + w, y + h});
 }
