@@ -288,20 +288,17 @@ D3D12Renderer::D3D12Renderer(IDXGISwapChain* swapchain_, ID3D12Device* device_, 
     m_vert_buffer->Unmap(0, &range);
 }
 
-void D3D12Renderer::render(std::function<void(D2DPainter&)> draw_fn) {
+void D3D12Renderer::render(std::function<void(D2DPainter&)> draw_fn, bool update_d2d) {
     m_cmd_allocator->Reset();
     m_cmd_list->Reset(m_cmd_allocator.Get(), nullptr);
 
-    auto now = Clock::now();
-
-    if (now >= m_d2d_next_frame_time) {
+    if (update_d2d) {
         m_d3d11on12_device->AcquireWrappedResources(m_wrapped_rt.GetAddressOf(), 1);
         m_d2d->begin();
         draw_fn(*m_d2d);
         m_d2d->end();
         m_d3d11on12_device->ReleaseWrappedResources(m_wrapped_rt.GetAddressOf(), 1);
         m_d3d11_context->Flush();
-        m_d2d_next_frame_time = now + std::chrono::duration_cast<std::chrono::milliseconds>(m_d2d_update_interval);
     }
 
     auto L = 0.0f;

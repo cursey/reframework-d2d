@@ -25,15 +25,12 @@ public:
 
     D3D12Renderer(IDXGISwapChain* swapchain_, ID3D12Device* device_, ID3D12CommandQueue* cmd_queue_);
 
-    void render(std::function<void(D2DPainter&)> draw_fn);
+    void render(std::function<void(D2DPainter&)> draw_fn, bool update_d2d);
 
     auto& get_d2d() { return m_d2d; }
-    auto get_d2d_max_updaterate() const { return 1.0 / m_d2d_update_interval.count(); }
-    auto set_d2d_max_updaterate(double hz) { m_d2d_update_interval = std::chrono::duration<double>{1.0 / hz}; }
 
 private:
     template <typename T> using ComPtr = Microsoft::WRL::ComPtr<T>;
-    using Clock = std::chrono::high_resolution_clock;
 
     struct Vert {
         float x, y;
@@ -65,9 +62,6 @@ private:
     int m_height{};
 
     std::unique_ptr<D2DPainter> m_d2d{};
-    Clock::time_point m_d2d_next_frame_time{Clock::now()};
-    const std::chrono::duration<double> DEFAULT_UPDATE_INTERVAL{1.0 / 60.0};
-    std::chrono::duration<double> m_d2d_update_interval{DEFAULT_UPDATE_INTERVAL};
 
     auto& get_rt(RTV rtv) { return m_rts[(int)rtv]; }
 

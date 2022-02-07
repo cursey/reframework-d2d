@@ -1,5 +1,6 @@
 #include <memory>
 #include <vector>
+#include <chrono>
 
 #include <reframework/API.hpp>
 #include <sol/sol.hpp>
@@ -8,6 +9,7 @@
 #include "DrawList.hpp"
 
 using API = reframework::API;
+using Clock = std::chrono::high_resolution_clock;
 
 std::unique_ptr<D3D12Renderer> g_d3d12{};
 D2DPainter* g_d2d{};
@@ -17,6 +19,13 @@ lua_State* g_lua{};
 bool g_needs_init{};
 DrawList g_drawlist{};
 DrawList::CommandLock* g_cmds{};
+Clock::time_point g_d2d_next_frame_time{Clock::now()};
+const std::chrono::duration<double> DEFAULT_UPDATE_INTERVAL{1.0 / 60.0};
+std::chrono::duration<double> g_d2d_update_interval{DEFAULT_UPDATE_INTERVAL};
+bool g_update_d2d{};
+
+auto get_d2d_max_updaterate() { return 1.0 / g_d2d_update_interval.count(); }
+auto set_d2d_max_updaterate(double hz) { g_d2d_update_interval = std::chrono::duration<double>{1.0 / hz}; }
 
 void on_ref_lua_state_created(lua_State* l) try {
     g_lua = l;
@@ -60,8 +69,8 @@ void on_ref_lua_state_created(lua_State* l) try {
         },
         "size", &D2DImage::size);
 
-    detail["get_max_updaterate"] = []() { return g_d3d12->get_d2d_max_updaterate(); };
-    detail["set_max_updaterate"] = [](double fps) { g_d3d12->set_d2d_max_updaterate(fps); };
+    detail["get_max_updaterate"] = []() { return get_d2d_max_updaterate(); };
+    detail["set_max_updaterate"] = [](double fps) { set_d2d_max_updaterate(fps); };
     d2d["detail"] = detail;
     d2d["register"] = [](sol::protected_function init_fn, sol::protected_function draw_fn) {
         g_init_fns.emplace_back(init_fn);
@@ -191,7 +200,9 @@ void on_ref_frame() try {
                 break;
             }
         }
-    });
+    }, g_update_d2d);
+
+    g_update_d2d = false;
 } catch (const std::exception& e) {
     OutputDebugStringA(e.what());
     // g_ref->functions->log_error(e.what());
@@ -222,21 +233,27 @@ void on_begin_rendering() try {
         g_needs_init = false;
     }
 
-    auto lua_lock = API::LuaLock{};
-    auto cmds_lock = g_drawlist.acquire();
-    g_cmds = &cmds_lock;
+    auto now = Clock::now();
 
-    cmds_lock.commands.clear();
+    if (now >= g_d2d_next_frame_time) {
+        auto lua_lock = API::LuaLock{};
+        auto cmds_lock = g_drawlist.acquire();
+        g_cmds = &cmds_lock;
 
-    for (const auto& draw_fn : g_draw_fns) {
-        auto result = draw_fn();
+        cmds_lock.commands.clear();
 
-        if (!result.valid()) {
-            sol::script_throw_on_error(g_lua, std::move(result));
+        for (const auto& draw_fn : g_draw_fns) {
+            auto result = draw_fn();
+
+            if (!result.valid()) {
+                sol::script_throw_on_error(g_lua, std::move(result));
+            }
         }
-    }
 
-    g_cmds = nullptr;
+        g_cmds = nullptr;
+        g_d2d_next_frame_time = now + std::chrono::duration_cast<std::chrono::milliseconds>(g_d2d_update_interval);
+        g_update_d2d = true;
+    }
 } catch (const std::exception& e) {
     OutputDebugStringA(e.what());
     // g_ref->functions->log_error(e.what());
