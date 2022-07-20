@@ -4,7 +4,7 @@ name = "reframework-d2d"
 cmake-after = "set(VCPKG_TARGET_TRIPLET x64-windows-static)"
 
 [vcpkg]
-version = "2022.01.01"
+version = "2022.06.15"
 packages = ["sol2", "lua", "utfcpp"]
 
 [find-package]
