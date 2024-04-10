@@ -46,6 +46,8 @@ public:
     struct Resource;
     struct TypeInfo;
     struct VMContext;
+    struct ReflectionProperty;
+    struct ReflectionMethod;
 
     struct LuaLock {
         LuaLock() {
@@ -96,7 +98,7 @@ public:
         return m_param;
     }
 
-    inline const auto sdk() const {
+    inline const REFrameworkSDKData* sdk() const {
         return m_sdk;
     }
 
@@ -106,6 +108,10 @@ public:
 
     inline const auto resource_manager() const {
         return (ResourceManager*)sdk()->functions->get_resource_manager();
+    }
+
+    inline const auto reframework() const {
+        return (REFramework*)param()->functions;
     }
 
     void lock_lua() {
@@ -127,7 +133,7 @@ public:
     }
 
     API::ManagedObject* typeof(const char* name) const {
-        return (API::ManagedObject*)sdk()->functions->typeof(name);
+        return (API::ManagedObject*)sdk()->functions->typeof_(name);
     }
 
     API::ManagedObject* get_managed_singleton(std::string_view name) const {
@@ -250,6 +256,16 @@ public:
 
         API::Property* get_property(uint32_t index) const {
             return (API::Property*)API::s_instance->sdk()->tdb->get_property(*this, index);
+        }
+    };
+
+    struct REFramework {
+        operator ::REFrameworkHandle() {
+            return (::REFrameworkHandle)this;
+        }
+
+        bool is_drawing_ui() const {
+            return API::s_instance->param()->functions->is_drawing_ui();
         }
     };
 
@@ -421,6 +437,10 @@ public:
         API::TypeInfo* get_type_info() const {
             return (API::TypeInfo*)API::s_instance->sdk()->type_definition->get_type_info(*this);
         }
+
+        API::ManagedObject* get_runtime_type() const {
+            return (API::ManagedObject*)API::s_instance->sdk()->type_definition->get_runtime_type(*this);
+        }
     };
 
     struct Method {
@@ -514,6 +534,14 @@ public:
 
         uint32_t get_invoke_id() const {
             return API::s_instance->sdk()->method->get_invoke_id(*this);
+        }
+
+        unsigned int add_hook(REFPreHookFn pre_fn, REFPostHookFn post_fn, bool ignore_jmp) const {
+            return API::s_instance->sdk()->functions->add_hook(*this, pre_fn, post_fn, ignore_jmp);
+        }
+
+        void remove_hook(unsigned int hook_id) const {
+            API::s_instance->sdk()->functions->remove_hook(*this, hook_id);
         }
     };
 
@@ -610,12 +638,12 @@ public:
             return API::s_instance->sdk()->managed_object->get_reflection_properties(*this);
         }
 
-        void* get_reflection_property_descriptor(std::string_view name) {
-            return API::s_instance->sdk()->managed_object->get_reflection_property_descriptor(*this, name.data());
+        API::ReflectionProperty* get_reflection_property_descriptor(std::string_view name) {
+            return (API::ReflectionProperty*)API::s_instance->sdk()->managed_object->get_reflection_property_descriptor(*this, name.data());
         }
 
-        void* get_reflection_method_descriptor(std::string_view name) {
-            return API::s_instance->sdk()->managed_object->get_reflection_method_descriptor(*this, name.data());
+        API::ReflectionMethod* get_reflection_method_descriptor(std::string_view name) {
+            return (API::ReflectionMethod*)API::s_instance->sdk()->managed_object->get_reflection_method_descriptor(*this, name.data());
         }
 
         template<typename Ret = void*, typename ...Args>
@@ -665,7 +693,7 @@ public:
                 return nullptr;
             }
 
-            return f->get_data_raw<T>(this, is_value_type);
+            return (T*)f->get_data_raw((void*)this, is_value_type);
         }
     };
 
@@ -722,12 +750,24 @@ public:
             return API::s_instance->sdk()->type_info->get_reflection_properties(*this);
         }
 
-        void* get_reflection_property_descriptor(std::string_view name) {
-            return API::s_instance->sdk()->type_info->get_reflection_property_descriptor(*this, name.data());
+        API::ReflectionProperty* get_reflection_property_descriptor(std::string_view name) {
+            return (API::ReflectionProperty*)API::s_instance->sdk()->type_info->get_reflection_property_descriptor(*this, name.data());
         }
 
-        void* get_reflection_method_descriptor(std::string_view name) {
-            return API::s_instance->sdk()->type_info->get_reflection_method_descriptor(*this, name.data());
+        API::ReflectionMethod* get_reflection_method_descriptor(std::string_view name) {
+            return (API::ReflectionMethod*)API::s_instance->sdk()->type_info->get_reflection_method_descriptor(*this, name.data());
+        }
+
+        void* get_deserializer_fn() const {
+            return API::s_instance->sdk()->type_info->get_deserializer_fn(*this);
+        }
+
+        API::TypeInfo* get_parent() const {
+            return (API::TypeInfo*)API::s_instance->sdk()->type_info->get_parent(*this);
+        }
+
+        uint32_t get_crc() const {
+            return API::s_instance->sdk()->type_info->get_crc(*this);
         }
     };
 
@@ -750,6 +790,34 @@ public:
 
         void cleanup_after_exception(int32_t old_ref_count) {
             API::s_instance->sdk()->vm_context->cleanup_after_exception(*this, old_ref_count);
+        }
+    };
+
+    struct ReflectionMethod {
+        operator ::REFrameworkReflectionMethodHandle() const {
+            return (::REFrameworkReflectionMethodHandle)this;
+        }
+
+        ::REFrameworkInvokeMethod get_function() const {
+            return API::s_instance->sdk()->reflection_method->get_function(*this);
+        }
+    };
+
+    struct ReflectionProperty {
+        operator ::REFrameworkReflectionPropertyHandle() const {
+            return (::REFrameworkReflectionPropertyHandle)this;
+        }
+
+        ::REFrameworkReflectionPropertyMethod get_getter() const {
+            return API::s_instance->sdk()->reflection_property->get_getter(*this);
+        }
+
+        bool is_static() const {
+            return API::s_instance->sdk()->reflection_property->is_static(*this);
+        }
+
+        uint32_t get_size() const {
+            return API::s_instance->sdk()->reflection_property->get_size(*this);
         }
     };
 
