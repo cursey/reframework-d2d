@@ -30,16 +30,4 @@ jobs:
           name: REFramework-D2D
           path: ${{github.workspace}}/install/bin/*
           if-no-files-found: error
-          
-      - name: Compress artifacts
-        uses: vimtor/action-zip@v1.2
-        with:
-          files: install/bin/
-          dest: REFramework-D2D.zip
-      
-      - name: Release
-        uses: softprops/action-gh-release@v2.0.4
-        if: ${{startsWith(github.ref, 'refs/tags/')}}
-        with:
-          files: ${{github.workspace}}/REFramework-D2D.zip
-          
+
