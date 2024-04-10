@@ -1,8 +1,13 @@
 #ifndef REFRAMEWORK_API_H
 #define REFRAMEWORK_API_H
 
+#ifndef __cplusplus
+#include <stdbool.h>
+#include <wchar.h>
+#endif
+
 #define REFRAMEWORK_PLUGIN_VERSION_MAJOR 1
-#define REFRAMEWORK_PLUGIN_VERSION_MINOR 0
+#define REFRAMEWORK_PLUGIN_VERSION_MINOR 7
 #define REFRAMEWORK_PLUGIN_VERSION_PATCH 0
 
 #define REFRAMEWORK_RENDERER_D3D11 0
@@ -14,28 +19,36 @@
 #define REFRAMEWORK_ERROR_EXCEPTION 2
 #define REFRAMEWORK_ERROR_IN_ARGS_SIZE_MISMATCH 3
 
+#define REFRAMEWORK_HOOK_CALL_ORIGINAL 0
+#define REFRAMEWORK_HOOK_SKIP_ORIGINAL 1
+
 typedef int REFrameworkResult;
 
 struct lua_State;
 
 typedef void (*REFInitializedCb)();
-typedef void (*REFLuaStateCreatedCb)(lua_State*);
-typedef void (*REFLuaStateDestroyedCb)(lua_State*);
-typedef void (*REFOnFrameCb)();
+typedef void (*REFLuaStateCreatedCb)(struct lua_State*);
+typedef void (*REFLuaStateDestroyedCb)(struct lua_State*);
+typedef void (*REFOnPresentCb)();
 typedef void (*REFOnPreApplicationEntryCb)();
 typedef void (*REFOnPostApplicationEntryCb)();
 typedef void (*REFOnDeviceResetCb)();
 typedef bool (*REFOnMessageCb)(void*, unsigned int, unsigned long long, long long);
 
+typedef struct lua_State* (*REFCreateScriptState)();
+typedef void (*REFDeleteScriptState)(struct lua_State*);
+
 typedef bool (*REFOnInitializeFn)(REFInitializedCb);
 typedef bool (*REFOnLuaStateCreatedFn)(REFLuaStateCreatedCb);
 typedef bool (*REFOnLuaStateDestroyedFn)(REFLuaStateDestroyedCb);
-typedef bool (*REFOnFrameFn)(REFOnFrameCb);
+typedef bool (*REFOnPresentFn)(REFOnPresentCb);
 typedef bool (*REFOnPreApplicationEntryFn)(const char*, REFOnPreApplicationEntryCb);
 typedef bool (*REFOnPostApplicationEntryFn)(const char*, REFOnPostApplicationEntryCb);
 typedef void (*REFLuaLockUnlockFn)();
 typedef bool (*REFOnDeviceResetFn)(REFOnDeviceResetCb);
 typedef bool (*REFOnMessageFn)(REFOnMessageCb);
+
+
 
 typedef struct {
     int major;
@@ -49,7 +62,7 @@ typedef void (*REFPluginRequiredVersionFn)(REFrameworkPluginVersion*);
 typedef struct {
     REFOnLuaStateCreatedFn on_lua_state_created;
     REFOnLuaStateDestroyedFn on_lua_state_destroyed;
-    REFOnFrameFn on_frame;
+    REFOnPresentFn on_present;
     REFOnPreApplicationEntryFn on_pre_application_entry;
     REFOnPostApplicationEntryFn on_post_application_entry;
     REFLuaLockUnlockFn lock_lua;
@@ -59,6 +72,9 @@ typedef struct {
     void (*log_error)(const char* format, ...);
     void (*log_warn)(const char* format, ...);
     void (*log_info)(const char* format, ...);
+    bool (*is_drawing_ui)();
+    REFCreateScriptState create_script_state;
+    REFDeleteScriptState delete_script_state;
 } REFrameworkPluginFunctions;
 
 typedef struct {
@@ -68,7 +84,7 @@ typedef struct {
     void* command_queue;
 } REFrameworkRendererData;
 
-// strong typedefs
+/* strong typedefs */
 #define DECLARE_REFRAMEWORK_HANDLE(name) struct name##__ { int unused; }; \
                              typedef struct name##__ *name
 
@@ -78,10 +94,13 @@ DECLARE_REFRAMEWORK_HANDLE(REFrameworkFieldHandle);
 DECLARE_REFRAMEWORK_HANDLE(REFrameworkPropertyHandle);
 DECLARE_REFRAMEWORK_HANDLE(REFrameworkManagedObjectHandle);
 DECLARE_REFRAMEWORK_HANDLE(REFrameworkTDBHandle);
+DECLARE_REFRAMEWORK_HANDLE(REFrameworkHandle);
 DECLARE_REFRAMEWORK_HANDLE(REFrameworkResourceHandle);
 DECLARE_REFRAMEWORK_HANDLE(REFrameworkResourceManagerHandle);
 DECLARE_REFRAMEWORK_HANDLE(REFrameworkVMContextHandle);
-DECLARE_REFRAMEWORK_HANDLE(REFrameworkTypeInfoHandle); // NOT a type definition
+DECLARE_REFRAMEWORK_HANDLE(REFrameworkTypeInfoHandle); /* NOT a type definition */
+DECLARE_REFRAMEWORK_HANDLE(REFrameworkReflectionPropertyHandle); /* NOT a TDB property */
+DECLARE_REFRAMEWORK_HANDLE(REFrameworkReflectionMethodHandle); /* NOT a TDB method */
 
 #define REFRAMEWORK_CREATE_INSTANCE_FLAGS_NONE 0
 #define REFRAMEWORK_CREATE_INSTANCE_FLAGS_SIMPLIFY 1
@@ -93,7 +112,19 @@ DECLARE_REFRAMEWORK_HANDLE(REFrameworkTypeInfoHandle); // NOT a type definition
 #define REFRAMEWORK_VM_OBJ_TYPE_DELEGATE 4
 #define REFRAMEWORK_VM_OBJ_TYPE_VALTYPE 5
 
+/*
+struct StackFrame {
+    char pad_0000[8+8]; 0x0000
+    const sdk::REMethodDefinition* method;
+    char pad_0010[24]; 0x0018
+    void* in_data; 0x0030 can point to data
+    void* out_data; 0x0038 can be whatever, can be a dword, can point to data
+    void* object_ptr; 0x0040 aka "this" pointer
+};*/
+
 typedef unsigned int REFrameworkVMObjType;
+typedef void (*REFrameworkInvokeMethod)(void* stack_frame, void* context);
+typedef void* (*REFrameworkReflectionPropertyMethod)(REFrameworkReflectionPropertyHandle prop, REFrameworkManagedObjectHandle thisptr, void* out_data);
 
 typedef struct {
     unsigned int (*get_index)(REFrameworkTypeDefinitionHandle);
@@ -122,19 +153,19 @@ typedef struct {
 
     REFrameworkVMObjType (*get_vm_obj_type)(REFrameworkTypeDefinitionHandle);
 
-    // All lookups are cached on our end
-    // however, the pointers will always stay the same,
-    // so you can cache them on your end e.g. with a static var to get a minor speed increase.
+    /* All lookups are cached on our end */
+    /* however, the pointers will always stay the same, */
+    /* so you can cache them on your end e.g. with a static var to get a minor speed increase. */
     REFrameworkMethodHandle (*find_method)(REFrameworkTypeDefinitionHandle, const char*);
     REFrameworkFieldHandle (*find_field)(REFrameworkTypeDefinitionHandle, const char*);
-    REFrameworkPropertyHandle (*find_property)(REFrameworkTypeDefinitionHandle, const char*); // not implemented yet.
+    REFrameworkPropertyHandle (*find_property)(REFrameworkTypeDefinitionHandle, const char*); /* not implemented yet. */
 
-    // out_size is the full size, in bytes of the out buffer
-    // out_len is how many elements were written to the out buffer, not the size of the written data
+    /* out_size is the full size, in bytes of the out buffer */
+    /* out_len is how many elements were written to the out buffer, not the size of the written data */
     REFrameworkResult (*get_methods)(REFrameworkTypeDefinitionHandle, REFrameworkMethodHandle* out, unsigned int out_size, unsigned int* out_count);
     REFrameworkResult (*get_fields)(REFrameworkTypeDefinitionHandle, REFrameworkFieldHandle* out, unsigned int out_size, unsigned int* out_count);
 
-    // get_instance usually only used for native singletons
+    /* get_instance usually only used for native singletons */
     void* (*get_instance)(REFrameworkTypeDefinitionHandle);
     void* (*create_instance_deprecated)(REFrameworkTypeDefinitionHandle);
     REFrameworkManagedObjectHandle (*create_instance)(REFrameworkTypeDefinitionHandle, unsigned int flags);
@@ -144,6 +175,7 @@ typedef struct {
     REFrameworkTypeDefinitionHandle (*get_underlying_type)(REFrameworkTypeDefinitionHandle);
 
     REFrameworkTypeInfoHandle (*get_type_info)(REFrameworkTypeDefinitionHandle);
+    REFrameworkManagedObjectHandle (*get_runtime_type)(REFrameworkTypeDefinitionHandle);
 } REFrameworkTDBTypeDefinition;
 
 /*
@@ -171,11 +203,9 @@ typedef struct {
     unsigned long long reserved;
 } REFrameworkMethodParameter;
 
-typedef void* (*REFGenericFunction)(...);
-
 typedef struct {
-    // make sure out size is at least size of InvokeRet
-    // each arg is always 8 bytes, even if it's something like a byte
+    /* make sure out size is at least size of InvokeRet */
+    /* each arg is always 8 bytes, even if it's something like a byte */
     REFrameworkResult (*invoke)(REFrameworkMethodHandle, void* thisptr, void** in_args, unsigned int in_args_size, void* out, unsigned int out_size);
     void* (*get_function)(REFrameworkMethodHandle);
     const char* (*get_name)(REFrameworkMethodHandle);
@@ -184,8 +214,8 @@ typedef struct {
 
     unsigned int (*get_num_params)(REFrameworkMethodHandle);
 
-    // out_size is the full size, in bytes of the out buffer
-    // out_count is how many elements were written to the out buffer, not the size of the written data
+    /* out_size is the full size, in bytes of the out buffer */
+    /* out_count is how many elements were written to the out buffer, not the size of the written data */
     REFrameworkResult (*get_params)(REFrameworkMethodHandle, REFrameworkMethodParameter* out, unsigned int out_size, unsigned int* out_len);
 
     unsigned int (*get_index)(REFrameworkMethodHandle);
@@ -214,7 +244,7 @@ typedef struct {
 } REFrameworkTDBField;
 
 typedef struct {
-    // todo
+    /* todo */
 } REFrameworkTDBProperty;
 
 typedef struct {
@@ -227,9 +257,9 @@ typedef struct {
     const char* (*get_string_database)(REFrameworkTDBHandle);
     unsigned char* (*get_raw_database)(REFrameworkTDBHandle);
 
-    // All lookups are cached on our end
-    // however, the pointers will always stay the same,
-    // so you can cache them on your end e.g. with a static var to get a minor speed increase.
+    /* All lookups are cached on our end */
+    /* however, the pointers will always stay the same, */
+    /* so you can cache them on your end e.g. with a static var to get a minor speed increase. */
     REFrameworkTypeDefinitionHandle (*get_type)(REFrameworkTDBHandle, unsigned int index);
     REFrameworkTypeDefinitionHandle (*find_type)(REFrameworkTDBHandle, const char* name);
     REFrameworkTypeDefinitionHandle (*find_type_by_fqn)(REFrameworkTDBHandle, unsigned int fqn);
@@ -248,17 +278,17 @@ typedef struct {
     unsigned int (*get_ref_count)(REFrameworkManagedObjectHandle);
     unsigned int (*get_size)(REFrameworkManagedObjectHandle);
     unsigned int (*get_vm_obj_type)(REFrameworkManagedObjectHandle);
-    REFrameworkTypeInfoHandle (*get_type_info)(REFrameworkManagedObjectHandle); // NOT a type definition
+    REFrameworkTypeInfoHandle (*get_type_info)(REFrameworkManagedObjectHandle); /* NOT a type definition */
     void* (*get_reflection_properties)(REFrameworkManagedObjectHandle);
-    void* (*get_reflection_property_descriptor)(REFrameworkManagedObjectHandle, const char* name);
-    void* (*get_reflection_method_descriptor)(REFrameworkManagedObjectHandle, const char* name);
+    REFrameworkReflectionPropertyHandle (*get_reflection_property_descriptor)(REFrameworkManagedObjectHandle, const char* name);
+    REFrameworkReflectionMethodHandle (*get_reflection_method_descriptor)(REFrameworkManagedObjectHandle, const char* name);
 } REFrameworkManagedObject;
 
 typedef struct {
     void* instance;
     REFrameworkTypeDefinitionHandle t;
     REFrameworkTypeInfoHandle type_info;
-    const char* name; // t is not guaranteed to be non-null so we pass the name along too
+    const char* name; /* t is not guaranteed to be non-null so we pass the name along too */
 } REFrameworkNativeSingleton;
 
 typedef struct {
@@ -268,16 +298,18 @@ typedef struct {
 } REFrameworkManagedSingleton;
 
 typedef struct {
-    // resource type, and then the path to the resource in the PAK
+    /* resource type, and then the path to the resource in the PAK */
     REFrameworkResourceHandle (*create_resource)(REFrameworkResourceManagerHandle, const char* type_name, const char* name);
+    REFrameworkManagedObjectHandle (*create_userdata)(REFrameworkResourceManagerHandle, const char* type_name, const char* name);
 } REFrameworkResourceManager;
 
 typedef struct {
     void (*add_ref)(REFrameworkResourceHandle);
     void (*release)(REFrameworkResourceHandle);
+    REFrameworkManagedObjectHandle (*create_holder)(REFrameworkResourceHandle, const char* type_name);
 } REFrameworkResource;
 
-// NOT a type definition
+/* NOT a type definition */
 typedef struct {
     const char* (*get_name)(REFrameworkTypeInfoHandle);
     REFrameworkTypeDefinitionHandle (*get_type_definition)(REFrameworkTypeInfoHandle);
@@ -286,8 +318,11 @@ typedef struct {
     void* (*get_singleton_instance)(REFrameworkTypeInfoHandle);
     void* (*create_instance)(REFrameworkTypeInfoHandle);
     void* (*get_reflection_properties)(REFrameworkTypeInfoHandle);
-    void* (*get_reflection_property_descriptor)(REFrameworkTypeInfoHandle, const char* name);
-    void* (*get_reflection_method_descriptor)(REFrameworkTypeInfoHandle, const char* name);
+    REFrameworkReflectionPropertyHandle (*get_reflection_property_descriptor)(REFrameworkTypeInfoHandle, const char* name);
+    REFrameworkReflectionMethodHandle (*get_reflection_method_descriptor)(REFrameworkTypeInfoHandle, const char* name);
+    void* (*get_deserializer_fn)(REFrameworkTypeInfoHandle);
+    REFrameworkTypeInfoHandle (*get_parent)(REFrameworkTypeInfoHandle);
+    unsigned int (*get_crc)(REFrameworkTypeInfoHandle);
 } REFrameworkTypeInfo;
 
 typedef struct {
@@ -297,27 +332,48 @@ typedef struct {
     void (*cleanup_after_exception)(REFrameworkVMContextHandle, int old_reference_count);
 } REFrameworkVMContext;
 
+/* NOT a TDB method */
+typedef struct {
+    REFrameworkInvokeMethod (*get_function)(REFrameworkReflectionMethodHandle);
+} REFrameworkReflectionMethod;
+
+/* NOT a TDB property */
+typedef struct {
+    REFrameworkReflectionPropertyMethod (*get_getter)(REFrameworkReflectionPropertyHandle);
+    bool (*is_static)(REFrameworkReflectionPropertyHandle);
+    unsigned int (*get_size)(REFrameworkReflectionPropertyHandle);
+} REFrameworkReflectionProperty;
+
+typedef int (*REFPreHookFn)(int argc, void** argv, REFrameworkTypeDefinitionHandle* arg_tys, unsigned long long ret_addr);
+typedef void (*REFPostHookFn)(void** ret_val, REFrameworkTypeDefinitionHandle ret_ty, unsigned long long ret_addr);
+
 typedef struct {
     REFrameworkTDBHandle (*get_tdb)();
     REFrameworkResourceManagerHandle (*get_resource_manager)();
-    REFrameworkVMContextHandle (*get_vm_context)(); // per-thread context
+    REFrameworkVMContextHandle (*get_vm_context)(); /* per-thread context */
 
-    REFrameworkManagedObjectHandle (*typeof)(const char* type_name); // System.Type
+    REFrameworkManagedObjectHandle (*typeof_)(const char* type_name); /* System.Type */
     REFrameworkManagedObjectHandle (*get_managed_singleton)(const char* type_name);
     void* (*get_native_singleton)(const char* type_name);
 
-    // out_size is the full size, in bytes of the out buffer
-    // out_count is how many elements were written to the out buffer, not the size of the written data
+    /* out_size is the full size, in bytes of the out buffer */
+    /* out_count is how many elements were written to the out buffer, not the size of the written data */
     REFrameworkResult (*get_managed_singletons)(REFrameworkManagedSingleton* out, unsigned int out_size, unsigned int* out_count);
     REFrameworkResult (*get_native_singletons)(REFrameworkNativeSingleton* out, unsigned int out_size, unsigned int* out_count);
 
     REFrameworkManagedObjectHandle (*create_managed_string)(const wchar_t* str);
     REFrameworkManagedObjectHandle (*create_managed_string_normal)(const char* str);
+
+    unsigned int (*add_hook)(REFrameworkMethodHandle, REFPreHookFn, REFPostHookFn, bool ignore_jmp);
+    void (*remove_hook)(REFrameworkMethodHandle, unsigned int);
+
+    void* (*allocate)(unsigned long long size);
+    void (*deallocate)(void*);
 } REFrameworkSDKFunctions;
 
-// these are NOT pointers to the actual objects
-// they are interfaces with functions that take handles to the objects
-// the functions, however, can return the actual objects
+/* these are NOT pointers to the actual objects */
+/* they are interfaces with functions that take handles to the objects */
+/* the functions, however, can return the actual objects */
 typedef struct {
     const REFrameworkSDKFunctions* functions;
     const REFrameworkTDB* tdb;
@@ -328,8 +384,10 @@ typedef struct {
     const REFrameworkManagedObject* managed_object;
     const REFrameworkResourceManager* resource_manager;
     const REFrameworkResource* resource;
-    const REFrameworkTypeInfo* type_info; // NOT a type definition
+    const REFrameworkTypeInfo* type_info; /* NOT a type definition */
     const REFrameworkVMContext* vm_context;
+    const REFrameworkReflectionMethod* reflection_method; /* NOT a TDB method */
+    const REFrameworkReflectionProperty* reflection_property; /* NOT a TDB property */
 } REFrameworkSDKData;
 
 typedef struct {
