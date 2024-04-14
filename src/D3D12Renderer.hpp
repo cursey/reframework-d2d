@@ -26,6 +26,15 @@ public:
     enum class SRV : int { D2D };
 
     D3D12Renderer(IDXGISwapChain* swapchain_, ID3D12Device* device_, ID3D12CommandQueue* cmd_queue_);
+    virtual ~D3D12Renderer() {
+        // Give the command contexts priority cleanup before everything else
+        // so any command lists can finish executing before destroying everything
+        for (auto& cmd_context : m_cmd_contexts) {
+            cmd_context->reset();
+        }
+
+        m_cmd_contexts.clear();
+    }
 
     void render(std::function<void(D2DPainter&)> draw_fn, bool update_d2d);
 
