@@ -70,7 +70,7 @@ private:
     };
 
     uint32_t m_frames_in_flight{1};
-    std::vector<std::unique_ptr<d3d12::CommandContext>> m_cmd_contexts{};
+    std::vector<std::unique_ptr<D3D12CommandContext>> m_cmd_contexts{};
     std::vector<std::unique_ptr<RenderResources>> m_render_resources{};
 
     int m_width{};

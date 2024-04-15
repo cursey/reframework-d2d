@@ -1,7 +1,6 @@
 #include "D3D12CommandContext.hpp"
 
-namespace d3d12 {
-CommandContext::CommandContext(ID3D12Device* device, const wchar_t* name) {
+D3D12CommandContext::D3D12CommandContext(ID3D12Device* device, const wchar_t* name) {
     std::scoped_lock _{m_mtx};
 
     m_cmd_allocator.Reset();
@@ -9,28 +8,28 @@ CommandContext::CommandContext(ID3D12Device* device, const wchar_t* name) {
     m_fence.Reset();
 
     if (FAILED(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_cmd_allocator)))) {
-        throw std::runtime_error("Failed to create command allocator");
+        throw std::runtime_error{"Failed to create command allocator"};
     }
 
     m_cmd_allocator->SetName(name);
 
     if (FAILED(device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_cmd_allocator.Get(), nullptr, IID_PPV_ARGS(&m_cmd_list)))) {
-        throw std::runtime_error("Failed to create command list");
+        throw std::runtime_error{"Failed to create command list"};
     }
 
     m_cmd_list->SetName(name);
 
     if (FAILED(device->CreateFence(m_fence_value, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence)))) {
-        throw std::runtime_error("Failed to create fence");
+        throw std::runtime_error{"Failed to create fence"};
     }
 
     m_fence->SetName(name);
-    m_fence_event = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
+    m_fence_event = CreateEvent(nullptr, FALSE, FALSE, nullptr);
     m_is_setup = true;
 }
 
-void CommandContext::reset() {
+void D3D12CommandContext::reset() {
     std::scoped_lock _{m_mtx};
     wait(2000);
 
@@ -45,7 +44,7 @@ void CommandContext::reset() {
     m_waiting_for_fence = false;
 }
 
-void CommandContext::wait(uint32_t ms) {
+void D3D12CommandContext::wait(uint32_t ms) {
     std::scoped_lock _{m_mtx};
 
     if (m_fence_event && m_waiting_for_fence) {
@@ -55,33 +54,33 @@ void CommandContext::wait(uint32_t ms) {
         m_waiting_for_fence = false;
 
         if (FAILED(m_cmd_allocator->Reset())) {
-            throw std::runtime_error("Failed to reset command allocator");
+            throw std::runtime_error{"Failed to reset command allocator"};
         }
 
         if (FAILED(m_cmd_list->Reset(m_cmd_allocator.Get(), nullptr))) {
-            throw std::runtime_error("Failed to reset command list");
+            throw std::runtime_error{"Failed to reset command list"};
         }
-
-        m_has_commands = false;
     }
 }
 
-void CommandContext::execute(ID3D12CommandQueue* command_queue) {
-    std::scoped_lock _{m_mtx};
-
-    if (m_has_commands) {
-        if (FAILED(m_cmd_list->Close())) {
-            throw std::runtime_error("Failed to close command list");
-        }
-
-        ID3D12CommandList* const cmd_lists[] = {m_cmd_list.Get()};
-
-        command_queue->ExecuteCommandLists(1, cmd_lists);
-        command_queue->Signal(m_fence.Get(), ++m_fence_value);
-        m_fence->SetEventOnCompletion(m_fence_value, m_fence_event);
-
-        m_waiting_for_fence = true;
-        m_has_commands = false;
-    }
+D3D12CommandContext::ComPtr<ID3D12GraphicsCommandList>& D3D12CommandContext::begin() {
+    m_mtx.lock();
+    wait(INFINITE);
+    return m_cmd_list;
 }
-} // namespace d3d12
+
+void D3D12CommandContext::end(ID3D12CommandQueue* command_queue) {
+    if (FAILED(m_cmd_list->Close())) {
+        throw std::runtime_error("Failed to close command list");
+    }
+
+    ID3D12CommandList* const cmd_lists[] = {m_cmd_list.Get()};
+
+    command_queue->ExecuteCommandLists(1, cmd_lists);
+    command_queue->Signal(m_fence.Get(), ++m_fence_value);
+    m_fence->SetEventOnCompletion(m_fence_value, m_fence_event);
+
+    m_waiting_for_fence = true;
+
+    m_mtx.unlock();
+}

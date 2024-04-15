@@ -52,7 +52,7 @@ D3D12Renderer::D3D12Renderer(IDXGISwapChain* swapchain_, ID3D12Device* device_, 
         // Create a command context for each back buffer.
         // We create one for each because the GPU could be doing work on one while we're recording commands on another,
         // before we submit them to the command queue. If we did not do this, we would run into some race conditions.
-        auto cmd_context = std::make_unique<d3d12::CommandContext>(m_device.Get());
+        auto cmd_context = std::make_unique<D3D12CommandContext>(m_device.Get());
 
         if (cmd_context->is_setup()) {
             m_cmd_contexts.push_back(std::move(cmd_context));
@@ -296,12 +296,7 @@ D3D12Renderer::D3D12Renderer(IDXGISwapChain* swapchain_, ID3D12Device* device_, 
 void D3D12Renderer::render(std::function<void(D2DPainter&)> draw_fn, bool update_d2d) {
     auto& cmd_context = m_cmd_contexts[m_swapchain->GetCurrentBackBufferIndex() % m_cmd_contexts.size()];
     auto& resources = m_render_resources[m_swapchain->GetCurrentBackBufferIndex() % m_render_resources.size()];
-
-    // Wait for the command context to be ready.
-    cmd_context->wait(INFINITE);
-    cmd_context->begin();
-
-    auto& cmd_list = cmd_context->cmd_list();
+    auto& cmd_list = cmd_context->begin();
     auto& vert_buffer = resources->vert_buffer;
 
     if (update_d2d) {
@@ -376,6 +371,6 @@ void D3D12Renderer::render(std::function<void(D2DPainter&)> draw_fn, bool update
     barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
     cmd_list->ResourceBarrier(1, &barrier);
 
-    // Execute calls Close() on the command list.
-    cmd_context->execute(m_cmd_queue.Get());
+    // end(...) calls Close() on the command list.
+    cmd_context->end(m_cmd_queue.Get());
 }
