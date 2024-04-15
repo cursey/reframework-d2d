@@ -21,20 +21,6 @@ D3D12Renderer::D3D12Renderer(IDXGISwapChain* swapchain_, ID3D12Device* device_, 
         throw std::runtime_error{"Failed to query D3D11On12 device"};
     }
 
-    // Create command allocator
-    if (FAILED(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_cmd_allocator)))) {
-        throw std::runtime_error{"Failed to create command allocator"};
-    }
-
-    // Create command list
-    if (FAILED(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_cmd_allocator.Get(), nullptr, IID_PPV_ARGS(&m_cmd_list)))) {
-        throw std::runtime_error{"Failed to create command list"};
-    }
-
-    if (FAILED(m_cmd_list->Close())) {
-        throw std::runtime_error{"Failed to close command list"};
-    }
-
     // Create RTV descriptor heap
     D3D12_DESCRIPTOR_HEAP_DESC rtv_desc = {};
     rtv_desc.NumDescriptors = (int)RTV::COUNT;
@@ -63,10 +49,23 @@ D3D12Renderer::D3D12Renderer(IDXGISwapChain* swapchain_, ID3D12Device* device_, 
     }
 
     for (int i = 0; i < swapchain_desc.BufferCount; i++) {
+        // Create a command context for each back buffer.
+        // We create one for each because the GPU could be doing work on one while we're recording commands on another,
+        // before we submit them to the command queue. If we did not do this, we would run into some race conditions.
+        auto cmd_context = std::make_unique<D3D12CommandContext>(m_device.Get());
+
+        if (cmd_context->is_setup()) {
+            m_cmd_contexts.push_back(std::move(cmd_context));
+        } else {
+            throw std::runtime_error{"Failed to create command context"};
+        }
+
         if (SUCCEEDED(m_swapchain->GetBuffer((UINT)i, IID_PPV_ARGS(&m_rts[i])))) {
             m_device->CreateRenderTargetView(m_rts[i].Get(), nullptr, get_cpu_rtv((RTV)i));
         }
     }
+
+    m_frames_in_flight = m_cmd_contexts.size();
 
     // Create D2D render target
     auto& backbuffer = get_rt(RTV::BACKBUFFER_0);
@@ -243,54 +242,62 @@ D3D12Renderer::D3D12Renderer(IDXGISwapChain* swapchain_, ID3D12Device* device_, 
         throw std::runtime_error{"Failed to create pipeline state"};
     }
 
-    D3D12_HEAP_PROPERTIES vertbuf_heap_props{};
-    vertbuf_heap_props.Type = D3D12_HEAP_TYPE_UPLOAD;
-    vertbuf_heap_props.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-    vertbuf_heap_props.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+    for (auto i = 0; i < m_frames_in_flight; i++) {
+        auto resources = std::make_unique<RenderResources>();
+        auto& vert_buffer = resources->vert_buffer;
 
-    D3D12_RESOURCE_DESC vertbuf_desc{};
-    vertbuf_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-    vertbuf_desc.Width = sizeof(Vert) * 6;
-    vertbuf_desc.Height = 1;
-    vertbuf_desc.DepthOrArraySize = 1;
-    vertbuf_desc.MipLevels = 1;
-    vertbuf_desc.Format = DXGI_FORMAT_UNKNOWN;
-    vertbuf_desc.SampleDesc.Count = 1;
-    vertbuf_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-    vertbuf_desc.Flags = D3D12_RESOURCE_FLAG_NONE;
+        D3D12_HEAP_PROPERTIES vertbuf_heap_props{};
+        vertbuf_heap_props.Type = D3D12_HEAP_TYPE_UPLOAD;
+        vertbuf_heap_props.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+        vertbuf_heap_props.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
 
-    if (FAILED(m_device->CreateCommittedResource(&vertbuf_heap_props, D3D12_HEAP_FLAG_NONE, &vertbuf_desc,
-            D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&m_vert_buffer)))) {
-        throw std::runtime_error{"Failed to create vertex buffer"};
+        D3D12_RESOURCE_DESC vertbuf_desc{};
+        vertbuf_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+        vertbuf_desc.Width = sizeof(Vert) * 6;
+        vertbuf_desc.Height = 1;
+        vertbuf_desc.DepthOrArraySize = 1;
+        vertbuf_desc.MipLevels = 1;
+        vertbuf_desc.Format = DXGI_FORMAT_UNKNOWN;
+        vertbuf_desc.SampleDesc.Count = 1;
+        vertbuf_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+        vertbuf_desc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+        if (FAILED(m_device->CreateCommittedResource(&vertbuf_heap_props, D3D12_HEAP_FLAG_NONE, &vertbuf_desc,
+                D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&vert_buffer)))) {
+            throw std::runtime_error{"Failed to create vertex buffer"};
+        }
+
+        // Upload the verticies.
+        D3D12_RANGE range{};
+        Vert* verts{};
+
+        if (FAILED(vert_buffer->Map(0, &range, (void**)&verts))) {
+            throw std::runtime_error{"Failed to map vertex buffer"};
+        }
+
+        auto w = (float)m_width;
+        auto h = (float)m_height;
+
+        // First triangle (top-left of screen).
+        verts[0] = {0.0f, 0.0f, 0.0f, 0.0f, 0xFFFFFFFF};
+        verts[1] = {w, 0.0f, 1.0f, 0.0f, 0xFFFFFFFF};
+        verts[2] = {0.0f, h, 0.0f, 1.0f, 0xFFFFFFFF};
+
+        // Second triangle (bottom-right of screen).
+        verts[3] = {w, 0.0f, 1.0f, 0.0f, 0xFFFFFFFF};
+        verts[4] = {w, h, 1.0f, 1.0f, 0xFFFFFFFF};
+        verts[5] = {0.0f, h, 0.0f, 1.0f, 0xFFFFFFFF};
+
+        vert_buffer->Unmap(0, &range);
+        m_render_resources.push_back(std::move(resources));
     }
-
-    // Upload the verticies.
-    D3D12_RANGE range{};
-    Vert* verts{};
-
-    if (FAILED(m_vert_buffer->Map(0, &range, (void**)&verts))) {
-        throw std::runtime_error{"Failed to map vertex buffer"};
-    }
-
-    auto w = (float)m_width;
-    auto h = (float)m_height;
-
-    // First triangle (top-left of screen).
-    verts[0] = {0.0f, 0.0f, 0.0f, 0.0f, 0xFFFFFFFF};
-    verts[1] = {w, 0.0f, 1.0f, 0.0f, 0xFFFFFFFF};
-    verts[2] = {0.0f, h, 0.0f, 1.0f, 0xFFFFFFFF};
-
-    // Second triangle (bottom-right of screen).
-    verts[3] = {w, 0.0f, 1.0f, 0.0f, 0xFFFFFFFF};
-    verts[4] = {w, h, 1.0f, 1.0f, 0xFFFFFFFF};
-    verts[5] = {0.0f, h, 0.0f, 1.0f, 0xFFFFFFFF};
-
-    m_vert_buffer->Unmap(0, &range);
 }
 
 void D3D12Renderer::render(std::function<void(D2DPainter&)> draw_fn, bool update_d2d) {
-    m_cmd_allocator->Reset();
-    m_cmd_list->Reset(m_cmd_allocator.Get(), nullptr);
+    auto& cmd_context = m_cmd_contexts[m_swapchain->GetCurrentBackBufferIndex() % m_cmd_contexts.size()];
+    auto& resources = m_render_resources[m_swapchain->GetCurrentBackBufferIndex() % m_render_resources.size()];
+    auto& cmd_list = cmd_context->begin();
+    auto& vert_buffer = resources->vert_buffer;
 
     if (update_d2d) {
         m_d3d11on12_device->AcquireWrappedResources(m_wrapped_rt.GetAddressOf(), 1);
@@ -318,27 +325,27 @@ void D3D12Renderer::render(std::function<void(D2DPainter&)> draw_fn, bool update
     vp.MinDepth = 0.0f;
     vp.MaxDepth = 1.0f;
     vp.TopLeftX = vp.TopLeftY = 0;
-    m_cmd_list->RSSetViewports(1, &vp);
+    cmd_list->RSSetViewports(1, &vp);
 
     D3D12_RECT sr{};
     sr.left = 0;
     sr.top = 0;
     sr.right = m_width;
     sr.bottom = m_height;
-    m_cmd_list->RSSetScissorRects(1, &sr);
+    cmd_list->RSSetScissorRects(1, &sr);
 
     D3D12_VERTEX_BUFFER_VIEW vbv{};
-    vbv.BufferLocation = m_vert_buffer->GetGPUVirtualAddress();
+    vbv.BufferLocation = vert_buffer->GetGPUVirtualAddress();
     vbv.SizeInBytes = sizeof(Vert) * 6;
     vbv.StrideInBytes = sizeof(Vert);
-    m_cmd_list->IASetVertexBuffers(0, 1, &vbv);
-    m_cmd_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    m_cmd_list->SetPipelineState(m_pipeline_state.Get());
-    m_cmd_list->SetGraphicsRootSignature(m_root_signature.Get());
-    m_cmd_list->SetGraphicsRoot32BitConstants(0, 16, mvp, 0);
+    cmd_list->IASetVertexBuffers(0, 1, &vbv);
+    cmd_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    cmd_list->SetPipelineState(m_pipeline_state.Get());
+    cmd_list->SetGraphicsRootSignature(m_root_signature.Get());
+    cmd_list->SetGraphicsRoot32BitConstants(0, 16, mvp, 0);
 
     const float blend_factor[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-    m_cmd_list->OMSetBlendFactor(blend_factor);
+    cmd_list->OMSetBlendFactor(blend_factor);
 
     // Draw to the back buffer.
     auto bb_index = m_swapchain->GetCurrentBackBufferIndex();
@@ -351,19 +358,19 @@ void D3D12Renderer::render(std::function<void(D2DPainter&)> draw_fn, bool update
     barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
     barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
 
-    m_cmd_list->ResourceBarrier(1, &barrier);
+    cmd_list->ResourceBarrier(1, &barrier);
     rts[0] = get_cpu_rtv((RTV)bb_index);
-    m_cmd_list->OMSetRenderTargets(1, rts, FALSE, NULL);
-    m_cmd_list->SetDescriptorHeaps(1, m_srv_heap.GetAddressOf());
+    cmd_list->OMSetRenderTargets(1, rts, FALSE, NULL);
+    cmd_list->SetDescriptorHeaps(1, m_srv_heap.GetAddressOf());
 
     // draw.
-    m_cmd_list->SetGraphicsRootDescriptorTable(1, get_gpu_srv(SRV::D2D));
-    m_cmd_list->DrawInstanced(6, 1, 0, 0);
+    cmd_list->SetGraphicsRootDescriptorTable(1, get_gpu_srv(SRV::D2D));
+    cmd_list->DrawInstanced(6, 1, 0, 0);
 
     barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
     barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
-    m_cmd_list->ResourceBarrier(1, &barrier);
-    m_cmd_list->Close();
+    cmd_list->ResourceBarrier(1, &barrier);
 
-    m_cmd_queue->ExecuteCommandLists(1, (ID3D12CommandList* const*)m_cmd_list.GetAddressOf());
+    // end(...) calls Close() on the command list.
+    cmd_context->end(m_cmd_queue.Get());
 }

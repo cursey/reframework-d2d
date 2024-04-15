@@ -8,6 +8,8 @@
 #include <dxgi1_4.h>
 #include <wrl.h>
 
+#include "D3D12CommandContext.hpp"
+
 #include "D2DPainter.hpp"
 
 class D3D12Renderer {
@@ -24,6 +26,15 @@ public:
     enum class SRV : int { D2D };
 
     D3D12Renderer(IDXGISwapChain* swapchain_, ID3D12Device* device_, ID3D12CommandQueue* cmd_queue_);
+    virtual ~D3D12Renderer() {
+        // Give the command contexts priority cleanup before everything else
+        // so any command lists can finish executing before destroying everything
+        for (auto& cmd_context : m_cmd_contexts) {
+            cmd_context->reset();
+        }
+
+        m_cmd_contexts.clear();
+    }
 
     void render(std::function<void(D2DPainter&)> draw_fn, bool update_d2d);
 
@@ -47,16 +58,20 @@ private:
     ComPtr<ID3D11On12Device> m_d3d11on12_device{};
     ComPtr<ID3D11Resource> m_wrapped_rt{};
 
-    ComPtr<ID3D12CommandAllocator> m_cmd_allocator{};
-    ComPtr<ID3D12GraphicsCommandList> m_cmd_list{};
-
     ComPtr<ID3D12DescriptorHeap> m_rtv_heap{};
     ComPtr<ID3D12DescriptorHeap> m_srv_heap{};
     ComPtr<ID3D12Resource> m_rts[(int)RTV::COUNT]{};
 
     ComPtr<ID3D12RootSignature> m_root_signature{};
     ComPtr<ID3D12PipelineState> m_pipeline_state{};
-    ComPtr<ID3D12Resource> m_vert_buffer{};
+
+    struct RenderResources {
+        ComPtr<ID3D12Resource> vert_buffer{};
+    };
+
+    uint32_t m_frames_in_flight{1};
+    std::vector<std::unique_ptr<D3D12CommandContext>> m_cmd_contexts{};
+    std::vector<std::unique_ptr<RenderResources>> m_render_resources{};
 
     int m_width{};
     int m_height{};
