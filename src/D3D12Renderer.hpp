@@ -8,7 +8,7 @@
 #include <dxgi1_4.h>
 #include <wrl.h>
 
-#include "d3d12/CommandContext.hpp"
+#include "D3D12CommandContext.hpp"
 
 #include "D2DPainter.hpp"
 

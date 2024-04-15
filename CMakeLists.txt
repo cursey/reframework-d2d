@@ -30,7 +30,7 @@ add_library(reframework-d2d SHARED
     src/D3D12Renderer.cpp
     src/DrawList.cpp
     src/Plugin.cpp
-    src/d3d12/CommandContext.cpp
+    src/D3D12CommandContext.cpp
 )
 target_include_directories(reframework-d2d PRIVATE 
     src
