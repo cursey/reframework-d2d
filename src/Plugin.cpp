@@ -24,6 +24,7 @@ struct Plugin {
     const std::chrono::duration<double> DEFAULT_UPDATE_INTERVAL{1.0 / 60.0};
     std::chrono::duration<double> d2d_update_interval{DEFAULT_UPDATE_INTERVAL};
     bool update_d2d{};
+    std::string last_script_error{};
 };
 
 Plugin* g_plugin{};
@@ -34,6 +35,12 @@ BOOL APIENTRY DllMain(HMODULE, DWORD reason, LPVOID) {
     }
 
     return TRUE;
+}
+
+void handle_error_message(const std::string& msg) {
+    OutputDebugStringA(msg.c_str());
+
+    g_plugin->last_script_error = msg;
 }
 
 auto get_d2d_max_updaterate() {
@@ -87,6 +94,9 @@ void on_ref_lua_state_created(lua_State* l) try {
 
     detail["get_max_updaterate"] = []() { return get_d2d_max_updaterate(); };
     detail["set_max_updaterate"] = [](double fps) { set_d2d_max_updaterate(fps); };
+    detail["get_last_error"] = []() {
+        return g_plugin->last_script_error;
+    };
     d2d["detail"] = detail;
     d2d["register"] = [](sol::protected_function init_fn, sol::protected_function draw_fn) {
         g_plugin->init_fns.emplace_back(init_fn);
@@ -148,7 +158,7 @@ void on_ref_lua_state_created(lua_State* l) try {
     lua["d2d"] = d2d;
     g_plugin->needs_init = true;
 } catch (const std::exception& e) {
-    OutputDebugStringA(e.what());
+    handle_error_message(e.what());
     API::get()->log_error("[reframework-d2d] [on_ref_lua_state_created] %s", e.what());
 }
 
@@ -156,9 +166,10 @@ void on_ref_lua_state_destroyed(lua_State* l) try {
     g_plugin->drawlist.acquire().commands.clear();
     g_plugin->draw_fns.clear();
     g_plugin->init_fns.clear();
+    g_plugin->last_script_error.clear();
     g_plugin->lua = nullptr;
 } catch (const std::exception& e) {
-    OutputDebugStringA(e.what());
+    handle_error_message(e.what());
     API::get()->log_error("[reframework-d2d] [on_ref_lua_state_destroyed] %s", e.what());
 }
 
@@ -167,7 +178,7 @@ void on_ref_device_reset() try {
     g_plugin->d2d = nullptr;
     g_plugin->d3d12.reset();
 } catch (const std::exception& e) {
-    OutputDebugStringA(e.what());
+    handle_error_message(e.what());
     API::get()->log_error("[reframework-d2d] [on_ref_lua_device_reset] %s", e.what());
 }
 
@@ -222,7 +233,7 @@ void on_ref_frame() try {
 
     g_plugin->update_d2d = false;
 } catch (const std::exception& e) {
-    OutputDebugStringA(e.what());
+    handle_error_message(e.what());
     // g_plugin->ref->functions->log_plugin->error(e.what());
 }
 
@@ -243,7 +254,7 @@ void on_begin_rendering() try {
                 }
             } catch (const std::exception& e) {
                 MessageBox(nullptr, e.what(), "[reframework-d2d] [init_fn] error", MB_ICONERROR | MB_OK);
-                OutputDebugStringA(e.what());
+                handle_error_message(e.what());
                 API::get()->log_error("[reframework-d2d] [on_ref_lua_device_reset] %s", e.what());
             }
         }
@@ -261,10 +272,14 @@ void on_begin_rendering() try {
         cmds_lock.commands.clear();
 
         for (const auto& draw_fn : g_plugin->draw_fns) {
-            auto result = draw_fn();
+            try {
+                auto result = draw_fn();
 
-            if (!result.valid()) {
-                sol::script_throw_on_error(g_plugin->lua, std::move(result));
+                if (!result.valid()) {
+                    sol::script_throw_on_error(g_plugin->lua, std::move(result));
+                }
+            } catch (const std::exception& e) {
+                handle_error_message(e.what());
             }
         }
 
@@ -273,7 +288,7 @@ void on_begin_rendering() try {
         g_plugin->update_d2d = true;
     }
 } catch (const std::exception& e) {
-    OutputDebugStringA(e.what());
+    handle_error_message(e.what());
     // g_plugin->ref->functions->log_error(e.what());
 }
 
