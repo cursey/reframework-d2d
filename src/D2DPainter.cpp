@@ -125,7 +125,10 @@ void D2DPainter::circle(float centerX, float centerY, float radiusX, float radiu
     m_context->DrawEllipse(ellipse, m_brush.Get(), thickness);
 }
 
-void D2DPainter::pie(float centerX, float centerY, float radius, float startAngle, float sweepAngle, unsigned int color) {
+void D2DPainter::pie(float centerX, float centerY, float radius, float startAngle, float sweepAngle, unsigned int color, bool clockwise) {
+    if (startAngle < 0) {
+        startAngle += 360.0f;
+    }
     startAngle = std::clamp(startAngle, 0.0f, 360.0f);
     sweepAngle = std::clamp(sweepAngle, 0.0f, 360.0f);
     if (sweepAngle == 0.0f) {
@@ -134,6 +137,7 @@ void D2DPainter::pie(float centerX, float centerY, float radius, float startAngl
     if (sweepAngle == 360.0f) {
         return this->fill_circle(centerX, centerY, radius, color);
     }
+    auto direction = clockwise ? D2D1_SWEEP_DIRECTION_CLOCKWISE : D2D1_SWEEP_DIRECTION_COUNTER_CLOCKWISE;
 
     ComPtr<ID2D1PathGeometry> pathGeometry;
     m_d2d1->CreatePathGeometry(&pathGeometry);
@@ -142,7 +146,8 @@ void D2DPainter::pie(float centerX, float centerY, float radius, float startAngl
     pathGeometry->Open(&geometrySink);
 
     const float startRadians = startAngle * (3.14159265f / 180.0f);
-    const float endRadians = (startAngle + sweepAngle) * (3.14159265f / 180.0f);
+    const float sweepRadians = sweepAngle * (3.14159265f / 180.0f);
+    const float endRadians = clockwise ? (startRadians + sweepRadians) : (startRadians - sweepRadians);
 
     D2D1_POINT_2F circleCenter = D2D1::Point2F(centerX, centerY);
 
@@ -153,7 +158,7 @@ void D2DPainter::pie(float centerX, float centerY, float radius, float startAngl
 
     // arc start -> arc end
     D2D1_POINT_2F arcEnd = D2D1::Point2F(centerX + radius * cosf(endRadians), centerY + radius * sinf(endRadians));
-    geometrySink->AddArc(D2D1::ArcSegment(arcEnd, D2D1::SizeF(radius, radius), 0.0f, D2D1_SWEEP_DIRECTION_CLOCKWISE,
+    geometrySink->AddArc(D2D1::ArcSegment(arcEnd, D2D1::SizeF(radius, radius), 0.0f, direction,
         (sweepAngle > 180.0f) ? D2D1_ARC_SIZE_LARGE : D2D1_ARC_SIZE_SMALL));
 
     // arc end -> circle center
@@ -185,7 +190,11 @@ void D2DPainter::ring(float centerX, float centerY, float outerRadius, float inn
     m_context->FillGeometry(pathGeometry.Get(), m_brush.Get());
 }
 
-void D2DPainter::ring(float centerX, float centerY, float outerRadius, float innerRadius, float startAngle, float sweepAngle, unsigned int color) {
+void D2DPainter::ring(
+    float centerX, float centerY, float outerRadius, float innerRadius, float startAngle, float sweepAngle, unsigned int color, bool clockwise) {
+    if (startAngle < 0) {
+        startAngle += 360.0f;
+    }
     startAngle = std::clamp(startAngle, 0.0f, 360.0f);
     sweepAngle = std::clamp(sweepAngle, 0.0f, 360.0f);
     if (sweepAngle == 0.0f) {
@@ -194,6 +203,8 @@ void D2DPainter::ring(float centerX, float centerY, float outerRadius, float inn
     if (sweepAngle == 360.0f) {
         return this->ring(centerX, centerY, outerRadius, innerRadius, color);
     }
+    auto direction = clockwise ? D2D1_SWEEP_DIRECTION_CLOCKWISE : D2D1_SWEEP_DIRECTION_COUNTER_CLOCKWISE;
+    auto counterDirection = !clockwise ? D2D1_SWEEP_DIRECTION_CLOCKWISE : D2D1_SWEEP_DIRECTION_COUNTER_CLOCKWISE;
 
     set_color(color);
 
@@ -204,7 +215,8 @@ void D2DPainter::ring(float centerX, float centerY, float outerRadius, float inn
     pathGeometry->Open(&sink);
 
     const float startRadians = startAngle * (3.14159265f / 180.0f);
-    const float endRadians = (startAngle + sweepAngle) * (3.14159265f / 180.0f);
+    const float sweepRadians = sweepAngle * (3.14159265f / 180.0f);
+    const float endRadians = clockwise ? (startRadians + sweepRadians) : (startRadians - sweepRadians);
 
     // outer arc start
     D2D1_POINT_2F outerStart = D2D1::Point2F(centerX + outerRadius * std::cos(startRadians), centerY + outerRadius * std::sin(startRadians));
@@ -212,7 +224,7 @@ void D2DPainter::ring(float centerX, float centerY, float outerRadius, float inn
 
     // outer arc start -> outer arc end
     D2D1_POINT_2F outerEnd = D2D1::Point2F(centerX + outerRadius * std::cos(endRadians), centerY + outerRadius * std::sin(endRadians));
-    sink->AddArc(D2D1::ArcSegment(outerEnd, D2D1::SizeF(outerRadius, outerRadius), 0.0f, D2D1_SWEEP_DIRECTION_CLOCKWISE,
+    sink->AddArc(D2D1::ArcSegment(outerEnd, D2D1::SizeF(outerRadius, outerRadius), 0.0f, direction,
             (sweepAngle > 180.0f) ? D2D1_ARC_SIZE_LARGE : D2D1_ARC_SIZE_SMALL));
 
     // outer arc end -> inner arc end
@@ -221,7 +233,7 @@ void D2DPainter::ring(float centerX, float centerY, float outerRadius, float inn
 
     // inner arc end -> inner arc start
     D2D1_POINT_2F innerStart = D2D1::Point2F(centerX + innerRadius * std::cos(startRadians), centerY + innerRadius * std::sin(startRadians));
-    sink->AddArc(D2D1::ArcSegment(innerStart, D2D1::SizeF(innerRadius, innerRadius), 0.0f, D2D1_SWEEP_DIRECTION_COUNTER_CLOCKWISE,
+    sink->AddArc(D2D1::ArcSegment(innerStart, D2D1::SizeF(innerRadius, innerRadius), 0.0f, counterDirection,
             (sweepAngle > 180.0f) ? D2D1_ARC_SIZE_LARGE : D2D1_ARC_SIZE_SMALL));
 
     // inner arc start -> outer arc start

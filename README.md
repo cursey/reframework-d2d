@@ -61,10 +61,20 @@ function()
     -- x, y, radius, start angle, sweep angle, color
     d2d.pie(1000, 500, 50, 0, 240, 0xFF00FFFF)
     d2d.pie(1100, 500, 50, 60, 240, 0xFF00FFFF)
+    -- negative start angle equals +360 degree
+    d2d.pie(1200, 100, 50, -90, 240, 0xFF00FFFF)
+    d2d.pie(1200, 200, 50, 270, 240, 0xFF00FFFF)
+    -- with clockwise=false
+    d2d.pie(1300, 100, 50, -90, 240, 0xFF00FFFF, false)
 
     -- x, y, outer radius, inner radius, start angle, sweep angle, color
     d2d.ring(1200, 500, 50, 30, 0, 240, 0xFF00FFFF)
     d2d.ring(1300, 500, 50, 30, 60, 240, 0xFF00FFFF)
+    -- negative start angle equals +360 degree
+    d2d.ring(1600, 100, 50, 30, -90, 240, 0xFF00FFFF)
+    d2d.ring(1600, 200, 50, 30, 270, 240, 0xFF00FFFF)
+    -- with clockwise=false
+    d2d.ring(1700, 100, 50, 30, -90, 240, 0xFF00FFFF, false)
 end)
 ```
 

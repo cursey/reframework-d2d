@@ -90,6 +90,7 @@ public:
                 float startAngle{};
                 float sweepAngle{};
                 unsigned int color{};
+                bool clockwise{};
             } pie;
             struct {
                 float x{};
@@ -99,6 +100,7 @@ public:
                 float startAngle{};
                 float sweepAngle{};
                 unsigned int color{};
+                bool clockwise{};
             } ring;
         };
         std::string str{};
@@ -119,8 +121,9 @@ public:
         void image(std::shared_ptr<D2DImage>& image, float x, float y, float w, float h);
         void fill_circle(float x, float y, float radiusX, float radiusY, unsigned int color);
         void circle(float x, float y, float radiusX, float radiusY, float thickness, unsigned int color);
-        void pie(float x, float y, float r, float startAngle, float sweepAngle, unsigned int color);
-        void ring(float x, float y, float outerRadius, float innerRadius, float startAngle, float sweepAngle, unsigned int color);
+        void pie(float x, float y, float r, float startAngle, float sweepAngle, unsigned int color, bool clockwise);
+        void ring(float x, float y, float outerRadius, float innerRadius, float startAngle, float sweepAngle, unsigned int color,
+            bool clockwise);
     };
 
     auto acquire() { return CommandLock{m_commands, std::scoped_lock{m_commands_mux}}; }

@@ -162,11 +162,22 @@ void on_ref_lua_state_created(lua_State* l) try {
     d2d["oval"] = [](float x, float y, float rX, float rY, float thickness, unsigned int color) {
         g_plugin->cmds->circle(x, y, rX, rY, thickness, color);
     };
-    d2d["pie"] = [](float x, float y, float r, float startAngle, float sweepAngle, unsigned int color) {
-        g_plugin->cmds->pie(x, y, r, startAngle, sweepAngle, color);
+    d2d["pie"] = [](float x, float y, float r, float startAngle, float sweepAngle, unsigned int color, sol::object clockwise_obj) {
+        auto clockwise = true;
+
+        if (clockwise_obj.is<bool>()) {
+            clockwise = clockwise_obj.as<bool>();
+        }
+        g_plugin->cmds->pie(x, y, r, startAngle, sweepAngle, color, clockwise);
     };
-    d2d["ring"] = [](float x, float y, float outerR, float innerR, float startAngle, float sweepAngle, unsigned int color) {
-        g_plugin->cmds->ring(x, y, outerR, innerR, startAngle, sweepAngle, color);
+    d2d["ring"] = [](float x, float y, float outerR, float innerR, float startAngle, float sweepAngle, unsigned int color,
+                      sol::object clockwise_obj) {
+        auto clockwise = true;
+
+        if (clockwise_obj.is<bool>()) {
+            clockwise = clockwise_obj.as<bool>();
+        }
+        g_plugin->cmds->ring(x, y, outerR, innerR, startAngle, sweepAngle, color, clockwise);
     };
     d2d["surface_size"] = [](sol::this_state s) {
         auto [w, h] = g_plugin->d2d->surface_size();
@@ -267,11 +278,12 @@ void on_ref_frame() try {
                     break;
 
                 case DrawList::CommandType::PIE:
-                    g_plugin->d2d->pie(cmd.pie.x, cmd.pie.y, cmd.pie.r, cmd.pie.startAngle, cmd.pie.sweepAngle, cmd.pie.color);
+                    g_plugin->d2d->pie(cmd.pie.x, cmd.pie.y, cmd.pie.r, cmd.pie.startAngle, cmd.pie.sweepAngle, cmd.pie.color, cmd.pie.clockwise);
                     break;
 
                 case DrawList::CommandType::RING:
-                    g_plugin->d2d->ring(cmd.ring.x, cmd.ring.y, cmd.ring.outerRadius, cmd.ring.innerRadius, cmd.ring.startAngle, cmd.ring.sweepAngle, cmd.ring.color);
+                    g_plugin->d2d->ring(cmd.ring.x, cmd.ring.y, cmd.ring.outerRadius, cmd.ring.innerRadius, cmd.ring.startAngle, cmd.ring.sweepAngle,
+                        cmd.ring.color, cmd.ring.clockwise);
                     break;
                 }
             }

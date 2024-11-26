@@ -107,7 +107,7 @@ void DrawList::CommandLock::circle(float x, float y, float radiusX, float radius
     commands.emplace_back(std::move(cmd));
 }
 
-void DrawList::CommandLock::pie(float x, float y, float r, float startAngle, float sweepAngle, unsigned int color) {
+void DrawList::CommandLock::pie(float x, float y, float r, float startAngle, float sweepAngle, unsigned int color, bool clockwise) {
     Command cmd{};
     cmd.type = CommandType::PIE;
     cmd.pie.x = x;
@@ -116,10 +116,12 @@ void DrawList::CommandLock::pie(float x, float y, float r, float startAngle, flo
     cmd.pie.startAngle = startAngle;
     cmd.pie.sweepAngle = sweepAngle;
     cmd.pie.color = color;
+    cmd.pie.clockwise = clockwise;
     commands.emplace_back(std::move(cmd));
 }
 
-void DrawList::CommandLock::ring(float x, float y, float outerRadius, float innerRadius, float startAngle, float sweepAngle, unsigned int color) {
+void DrawList::CommandLock::ring(float x, float y, float outerRadius, float innerRadius, float startAngle, float sweepAngle, unsigned int color,
+    bool clockwise) {
     Command cmd{};
     cmd.type = CommandType::RING;
     cmd.ring.x = x;
@@ -129,5 +131,6 @@ void DrawList::CommandLock::ring(float x, float y, float outerRadius, float inne
     cmd.ring.startAngle = startAngle;
     cmd.ring.sweepAngle = sweepAngle;
     cmd.ring.color = color;
+    cmd.ring.clockwise = clockwise;
     commands.emplace_back(std::move(cmd));
 }

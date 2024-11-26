@@ -36,9 +36,10 @@ public:
     void fill_circle(float centerX, float centerY, float radiusX, float radiusY, unsigned int color);
     void circle(float centerX, float centerY, float radius, int thickness, unsigned int color);
     void circle(float centerX, float centerY, float radiusX, float radiusY, int thickness, unsigned int color);
-    void pie(float centerX, float centerY, float radius, float startAngle, float sweepAngle, unsigned int color);
+    void pie(float centerX, float centerY, float radius, float startAngle, float sweepAngle, unsigned int color, bool clockwise);
     void ring(float centerX, float centerY, float outerRadius, float innerRadius, unsigned int color);
-    void ring(float centerX, float centerY, float outerRadius, float innerRadius, float startAngle, float sweepAngle, unsigned int color);
+    void ring(float centerX, float centerY, float outerRadius, float innerRadius, float startAngle, float sweepAngle, unsigned int color,
+        bool clockwise);
 
     auto surface_size() const { return std::make_tuple(m_rt_desc.Width, m_rt_desc.Height); }
 
