@@ -138,6 +138,12 @@ void on_ref_lua_state_created(lua_State* l) try {
     d2d["fill_rounded_rect"] = [](float x, float y, float w, float h, float rX, float rY, unsigned int color) {
         g_plugin->cmds->fill_rounded_rect(x, y, w, h, rX, rY, color);
     };
+    d2d["quad"] = [](float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4, float thickness, unsigned int color) {
+        g_plugin->cmds->quad(x1, y1, x2, y2, x3, y3, x4, y4, thickness, color);
+    };
+    d2d["fill_quad"] = [](float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4, unsigned int color) {
+        g_plugin->cmds->fill_quad(x1, y1, x2, y2, x3, y3, x4, y4, color);
+    };
     d2d["line"] = [](float x1, float y1, float x2, float y2, float thickness, unsigned int color) {
         g_plugin->cmds->line(x1, y1, x2, y2, thickness, color);
     };
@@ -258,6 +264,16 @@ void on_ref_frame() try {
                 case DrawList::CommandType::FILL_ROUNDED_RECT:
                     g_plugin->d2d->fill_rounded_rect(cmd.rounded_rect.x, cmd.rounded_rect.y, cmd.rounded_rect.w, cmd.rounded_rect.h,
                         cmd.rounded_rect.rX, cmd.rounded_rect.rY, cmd.rounded_rect.color);
+                    break;
+
+                case DrawList::CommandType::QUAD:
+                    g_plugin->d2d->quad(cmd.quad.x1, cmd.quad.y1, cmd.quad.x2, cmd.quad.y2, cmd.quad.x3, cmd.quad.y3, 
+                        cmd.quad.x4, cmd.quad.y4, cmd.quad.thickness, cmd.quad.color);
+                    break;
+
+                case DrawList::CommandType::FILL_QUAD:
+                    g_plugin->d2d->fill_quad(cmd.fill_quad.x1, cmd.fill_quad.y1, cmd.fill_quad.x2, cmd.fill_quad.y2, 
+                        cmd.fill_quad.x3, cmd.fill_quad.y3, cmd.fill_quad.x4, cmd.fill_quad.y4, cmd.fill_quad.color);
                     break;
 
                 case DrawList::CommandType::LINE:

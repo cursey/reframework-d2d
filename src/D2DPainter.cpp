@@ -87,6 +87,44 @@ void D2DPainter::fill_rounded_rect(float x, float y, float w, float h, float rad
     m_context->FillRoundedRectangle({x, y, x + w, y + h, radiusX, radiusY}, m_brush.Get());
 }
 
+void D2DPainter::quad(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4, float thickness, unsigned int color) {
+    ComPtr<ID2D1PathGeometry> pathGeometry;
+    m_d2d1->CreatePathGeometry(&pathGeometry);
+
+    ComPtr<ID2D1GeometrySink> sink;
+    pathGeometry->Open(&sink);
+
+    sink->BeginFigure(D2D1::Point2F(x1, y1), D2D1_FIGURE_BEGIN_FILLED);
+    sink->AddLine(D2D1::Point2F(x2, y2));
+    sink->AddLine(D2D1::Point2F(x3, y3));
+    sink->AddLine(D2D1::Point2F(x4, y4));
+
+    sink->EndFigure(D2D1_FIGURE_END_CLOSED);
+    sink->Close();
+
+    set_color(color);
+    m_context->DrawGeometry(pathGeometry.Get(), m_brush.Get(), thickness);
+}
+
+void D2DPainter::fill_quad(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4, unsigned int color) {
+    ComPtr<ID2D1PathGeometry> pathGeometry;
+    m_d2d1->CreatePathGeometry(&pathGeometry);
+
+    ComPtr<ID2D1GeometrySink> sink;
+    pathGeometry->Open(&sink);
+
+    sink->BeginFigure(D2D1::Point2F(x1, y1), D2D1_FIGURE_BEGIN_FILLED);
+    sink->AddLine(D2D1::Point2F(x2, y2));
+    sink->AddLine(D2D1::Point2F(x3, y3));
+    sink->AddLine(D2D1::Point2F(x4, y4));
+
+    sink->EndFigure(D2D1_FIGURE_END_CLOSED);
+    sink->Close();
+
+    set_color(color);
+    m_context->FillGeometry(pathGeometry.Get(), m_brush.Get());
+}
+
 void D2DPainter::line(float x1, float y1, float x2, float y2, float thickness, unsigned int color) {
     set_color(color);
     m_context->DrawLine({x1, y1}, {x2, y2}, m_brush.Get(), thickness);

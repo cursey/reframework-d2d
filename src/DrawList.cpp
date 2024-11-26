@@ -61,6 +61,39 @@ void DrawList::CommandLock::fill_rounded_rect(float x, float y, float w, float h
     commands.emplace_back(std::move(cmd));
 }
 
+void DrawList::CommandLock::quad(
+    float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4, float thickness, unsigned int color) {
+    Command cmd{};
+    cmd.type = CommandType::QUAD;
+    cmd.quad.x1 = x1;
+    cmd.quad.y1 = y1;
+    cmd.quad.x2 = x2;
+    cmd.quad.y2 = y2;
+    cmd.quad.x3 = x3;
+    cmd.quad.y3 = y3;
+    cmd.quad.x4 = x4;
+    cmd.quad.y4 = y4;
+    cmd.quad.thickness = thickness;
+    cmd.quad.color = color;
+    commands.emplace_back(std::move(cmd));
+}
+
+void DrawList::CommandLock::fill_quad(
+    float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4, unsigned int color) {
+    Command cmd{};
+    cmd.type = CommandType::FILL_QUAD;
+    cmd.fill_quad.x1 = x1;
+    cmd.fill_quad.y1 = y1;
+    cmd.fill_quad.x2 = x2;
+    cmd.fill_quad.y2 = y2;
+    cmd.fill_quad.x3 = x3;
+    cmd.fill_quad.y3 = y3;
+    cmd.fill_quad.x4 = x4;
+    cmd.fill_quad.y4 = y4;
+    cmd.fill_quad.color = color;
+    commands.emplace_back(std::move(cmd));
+}
+
 void DrawList::CommandLock::line(float x1, float y1, float x2, float y2, float thickness, unsigned int color) {
     Command cmd{};
     cmd.type = CommandType::LINE;

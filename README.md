@@ -33,6 +33,8 @@ function()
     d2d.fill_rect(500, 100, w, h, 0xFFFFFFFF)
     d2d.text(font, str, 500, 100, 0xFF000000)
     d2d.outline_rect(500, 100, w, h, 5, 0xFF00FFFF)
+    d2d.quad(100, 100, 500, 100, 500, 500, 400, 500, 5, 0xFF00FFFF)
+    d2d.fill_quad(1100, 1100, 1500, 1100, 1500, 1500, 1400, 1500, 0xFF00FFFF)
 
     local screen_w, screen_h = d2d.surface_size()
     local img_w, img_h = image:size()
@@ -180,6 +182,31 @@ Draws a filled in a rounded rectangle
 * `rX` the corner radius X
 * `rY` the corner radius Y
 * `color` the ARGB color of the rectangle
+
+---
+
+### `d2d.quad(x1, y1, x2, y2, x3, y3, x4, y4, thickness, color)`
+Draws the outline of a quad
+
+#### Params
+* `x1, y1` the first coordinate
+* `x2, y2` the second coordinate
+* `x3, y3` the third coordinate
+* `x4, y4` the fourth coordinate
+* `thickness` the thickness of the outline
+* `color` the ARGB color of the quad
+
+---
+
+### `d2d.fill__quad(x1, y1, x2, y2, x3, y3, x4, y4, color)`
+Draws a filled in a quad
+
+#### Params
+* `x1, y1` the first coordinate
+* `x2, y2` the second coordinate
+* `x3, y3` the third coordinate
+* `x4, y4` the fourth coordinate
+* `color` the ARGB color of the quad
 
 ---
 
