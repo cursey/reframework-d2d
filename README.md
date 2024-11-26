@@ -154,6 +154,35 @@ Draws the outline of a rectangle
 
 ---
 
+### `d2d.rounded_rect(x, y, w, h, rX, rY, thickness, color)`
+Draws the outline of a rounded rectangle
+
+#### Params
+* `x` the horizontal position on the screen
+* `y` the vertical position on the screen
+* `w` the width of the rectangle
+* `h` the height of the rectangle
+* `rX` the corner radius X
+* `rY` the corner radius Y
+* `thickness` the thickness of the outline
+* `color` the ARGB color of the rectangle
+
+---
+
+### `d2d.fill_rounded_rect(x, y, w, h, rX, rY, color)`
+Draws a filled in a rounded rectangle
+
+#### Params
+* `x` the horizontal position on the screen
+* `y` the vertical position on the screen
+* `w` the width of the rectangle
+* `h` the height of the rectangle
+* `rX` the corner radius X
+* `rY` the corner radius Y
+* `color` the ARGB color of the rectangle
+
+---
+
 ### `d2d.line(x1, y1, x2, y2, thickness, color)`
 Draws a line between two points
 
@@ -164,6 +193,82 @@ Draws a line between two points
 * `y2` the second vertical position on the screen
 * `thickness` the thickness of the line
 * `color` the ARGB color of the rectangle
+
+---
+
+### `d2d.circle(x, y, r, thickness, color)`
+Draws the outline of a circle
+
+#### Params
+* `x` the horizontal center on the screen
+* `y` the vertical center on the screen
+* `r` the radius of the circle
+* `thickness` the thickness of the outline
+* `color` the ARGB color of the circle
+
+---
+
+### `d2d.fill_circle(x, y, r, color)`
+Draws a filled in a circle
+
+#### Params
+* `x` the horizontal center on the screen
+* `y` the vertical center on the screen
+* `r` the radius of the circle
+* `color` the ARGB color of the circle
+
+---
+
+### `d2d.oval(x, y, rX, rY, thickness, color)`
+Draws the outline of a oval
+
+#### Params
+* `x` the horizontal center on the screen
+* `y` the vertical center on the screen
+* `rX` the horizontal radius of the oval
+* `rY` the vertical radius of the oval
+* `thickness` the thickness of the outline
+* `color` the ARGB color of the oval
+
+---
+
+### `d2d.fill_oval(x, y, rX, rY, color)`
+Draws a filled in a oval
+
+#### Params
+* `x` the horizontal center on the screen
+* `y` the vertical center on the screen
+* `rX` the horizontal radius of the oval
+* `rY` the vertical radius of the oval
+* `color` the ARGB color of the oval
+
+---
+
+### `d2d.pie(x, y, r, startAngle, sweepAngle, color, clockwise)`
+Draws a filled pie
+
+#### Params
+* `x` the horizontal center on the screen
+* `y` the vertical center on the screen
+* `startAngle` the pie start angle, range from -360 to 360.
+* `sweepAngle` the pie sweep angle, range from 0 to 360.
+* `color` the ARGB color of the pie
+* `clockwise` by default is true, clockwise. Set false to counter clockwise.
+
+---
+
+### `d2d.ring(x, y, outerRadius, innerRadius, startAngle, sweepAngle, color, clockwise)`
+Draws a filled ring
+
+#### Params
+* `x` the horizontal center on the screen
+* `y` the vertical center on the screen
+* `outerRadius` the ring outer radius
+* `innerRadius` the ring inner radius
+* `startAngle` the pie start angle, range from -360 to 360.
+* `sweepAngle` the pie sweep angle, range from 0 to 360.
+* `color` the ARGB color of the pie
+* `clockwise` by default is true, clockwise. Set false to counter clockwise.
 
 ---
 
