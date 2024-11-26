@@ -42,6 +42,29 @@ function()
 
     -- Draw image at the bottom left corner of the screen but scaled to 50x50.
     d2d.image(image, 0, screen_h - 50, 50, 50)
+    
+    -- x, y, width, height, corner round x, corner round y, thickness, color
+    d2d.rounded_rect(400, 500, 80, 40, 5, 15, 5, 0xFF00FFFF)
+    -- x, y, width, height, corner round x, corner round y, color
+    d2d.fill_rounded_rect(400, 500, 80, 40, 5, 15, 0xFF00FFFF)
+
+    -- x, y, radius, color
+    d2d.fill_circle(600, 500, 50, 0xFF00FFFF)
+    -- x, y, radius x, radius y, color
+    d2d.fill_oval(700, 500, 50, 80, 0xFF00FFFF)
+
+    -- x, y, radius, thickness, color
+    d2d.circle(800, 500, 50, 5, 0xFF00FFFF)
+    -- x, y, radius x, radius y, thickness, color
+    d2d.oval(900, 500, 50, 80, 5, 0xFF00FFFF)
+
+    -- x, y, radius, start angle, sweep angle, color
+    d2d.pie(1000, 500, 50, 0, 240, 0xFF00FFFF)
+    d2d.pie(1100, 500, 50, 60, 240, 0xFF00FFFF)
+
+    -- x, y, outer radius, inner radius, start angle, sweep angle, color
+    d2d.ring(1200, 500, 50, 30, 0, 240, 0xFF00FFFF)
+    d2d.ring(1300, 500, 50, 30, 60, 240, 0xFF00FFFF)
 end)
 ```
 
