@@ -33,6 +33,8 @@ function()
     d2d.fill_rect(500, 100, w, h, 0xFFFFFFFF)
     d2d.text(font, str, 500, 100, 0xFF000000)
     d2d.outline_rect(500, 100, w, h, 5, 0xFF00FFFF)
+    d2d.quad(100, 100, 500, 100, 500, 500, 400, 500, 5, 0xFF00FFFF)
+    d2d.fill_quad(1100, 1100, 1500, 1100, 1500, 1500, 1400, 1500, 0xFF00FFFF)
 
     local screen_w, screen_h = d2d.surface_size()
     local img_w, img_h = image:size()
@@ -42,6 +44,39 @@ function()
 
     -- Draw image at the bottom left corner of the screen but scaled to 50x50.
     d2d.image(image, 0, screen_h - 50, 50, 50)
+    
+    -- x, y, width, height, corner round x, corner round y, thickness, color
+    d2d.rounded_rect(400, 500, 80, 40, 5, 15, 5, 0xFF00FFFF)
+    -- x, y, width, height, corner round x, corner round y, color
+    d2d.fill_rounded_rect(400, 500, 80, 40, 5, 15, 0xFF00FFFF)
+
+    -- x, y, radius, color
+    d2d.fill_circle(600, 500, 50, 0xFF00FFFF)
+    -- x, y, radius x, radius y, color
+    d2d.fill_oval(700, 500, 50, 80, 0xFF00FFFF)
+
+    -- x, y, radius, thickness, color
+    d2d.circle(800, 500, 50, 5, 0xFF00FFFF)
+    -- x, y, radius x, radius y, thickness, color
+    d2d.oval(900, 500, 50, 80, 5, 0xFF00FFFF)
+
+    -- x, y, radius, start angle, sweep angle, color
+    d2d.pie(1000, 500, 50, 0, 240, 0xFF00FFFF)
+    d2d.pie(1100, 500, 50, 60, 240, 0xFF00FFFF)
+    -- negative start angle equals +360 degree
+    d2d.pie(1200, 100, 50, -90, 240, 0xFF00FFFF)
+    d2d.pie(1200, 200, 50, 270, 240, 0xFF00FFFF)
+    -- with clockwise=false
+    d2d.pie(1300, 100, 50, -90, 240, 0xFF00FFFF, false)
+
+    -- x, y, outer radius, inner radius, start angle, sweep angle, color
+    d2d.ring(1200, 500, 50, 30, 0, 240, 0xFF00FFFF)
+    d2d.ring(1300, 500, 50, 30, 60, 240, 0xFF00FFFF)
+    -- negative start angle equals +360 degree
+    d2d.ring(1600, 100, 50, 30, -90, 240, 0xFF00FFFF)
+    d2d.ring(1600, 200, 50, 30, 270, 240, 0xFF00FFFF)
+    -- with clockwise=false
+    d2d.ring(1700, 100, 50, 30, -90, 240, 0xFF00FFFF, false)
 end)
 ```
 
@@ -121,6 +156,60 @@ Draws the outline of a rectangle
 
 ---
 
+### `d2d.rounded_rect(x, y, w, h, rX, rY, thickness, color)`
+Draws the outline of a rounded rectangle
+
+#### Params
+* `x` the horizontal position on the screen
+* `y` the vertical position on the screen
+* `w` the width of the rectangle
+* `h` the height of the rectangle
+* `rX` the corner radius X
+* `rY` the corner radius Y
+* `thickness` the thickness of the outline
+* `color` the ARGB color of the rectangle
+
+---
+
+### `d2d.fill_rounded_rect(x, y, w, h, rX, rY, color)`
+Draws a filled in a rounded rectangle
+
+#### Params
+* `x` the horizontal position on the screen
+* `y` the vertical position on the screen
+* `w` the width of the rectangle
+* `h` the height of the rectangle
+* `rX` the corner radius X
+* `rY` the corner radius Y
+* `color` the ARGB color of the rectangle
+
+---
+
+### `d2d.quad(x1, y1, x2, y2, x3, y3, x4, y4, thickness, color)`
+Draws the outline of a quad
+
+#### Params
+* `x1, y1` the first coordinate
+* `x2, y2` the second coordinate
+* `x3, y3` the third coordinate
+* `x4, y4` the fourth coordinate
+* `thickness` the thickness of the outline
+* `color` the ARGB color of the quad
+
+---
+
+### `d2d.fill_quad(x1, y1, x2, y2, x3, y3, x4, y4, color)`
+Draws a filled in a quad
+
+#### Params
+* `x1, y1` the first coordinate
+* `x2, y2` the second coordinate
+* `x3, y3` the third coordinate
+* `x4, y4` the fourth coordinate
+* `color` the ARGB color of the quad
+
+---
+
 ### `d2d.line(x1, y1, x2, y2, thickness, color)`
 Draws a line between two points
 
@@ -131,6 +220,82 @@ Draws a line between two points
 * `y2` the second vertical position on the screen
 * `thickness` the thickness of the line
 * `color` the ARGB color of the rectangle
+
+---
+
+### `d2d.circle(x, y, r, thickness, color)`
+Draws the outline of a circle
+
+#### Params
+* `x` the horizontal center on the screen
+* `y` the vertical center on the screen
+* `r` the radius of the circle
+* `thickness` the thickness of the outline
+* `color` the ARGB color of the circle
+
+---
+
+### `d2d.fill_circle(x, y, r, color)`
+Draws a filled in a circle
+
+#### Params
+* `x` the horizontal center on the screen
+* `y` the vertical center on the screen
+* `r` the radius of the circle
+* `color` the ARGB color of the circle
+
+---
+
+### `d2d.oval(x, y, rX, rY, thickness, color)`
+Draws the outline of a oval
+
+#### Params
+* `x` the horizontal center on the screen
+* `y` the vertical center on the screen
+* `rX` the horizontal radius of the oval
+* `rY` the vertical radius of the oval
+* `thickness` the thickness of the outline
+* `color` the ARGB color of the oval
+
+---
+
+### `d2d.fill_oval(x, y, rX, rY, color)`
+Draws a filled in a oval
+
+#### Params
+* `x` the horizontal center on the screen
+* `y` the vertical center on the screen
+* `rX` the horizontal radius of the oval
+* `rY` the vertical radius of the oval
+* `color` the ARGB color of the oval
+
+---
+
+### `d2d.pie(x, y, r, startAngle, sweepAngle, color, clockwise)`
+Draws a filled pie
+
+#### Params
+* `x` the horizontal center on the screen
+* `y` the vertical center on the screen
+* `startAngle` the pie start angle, range from -360 to 360.
+* `sweepAngle` the pie sweep angle, range from 0 to 360.
+* `color` the ARGB color of the pie
+* `clockwise` by default is true, clockwise. Set false to counter clockwise.
+
+---
+
+### `d2d.ring(x, y, outerRadius, innerRadius, startAngle, sweepAngle, color, clockwise)`
+Draws a filled ring
+
+#### Params
+* `x` the horizontal center on the screen
+* `y` the vertical center on the screen
+* `outerRadius` the ring outer radius
+* `innerRadius` the ring inner radius
+* `startAngle` the pie start angle, range from -360 to 360.
+* `sweepAngle` the pie sweep angle, range from 0 to 360.
+* `color` the ARGB color of the pie
+* `clockwise` by default is true, clockwise. Set false to counter clockwise.
 
 ---
 
