@@ -51,13 +51,13 @@ void DrawList::CommandLock::rounded_rect(float x, float y, float w, float h, flo
 void DrawList::CommandLock::fill_rounded_rect(float x, float y, float w, float h, float rX, float rY, unsigned int color) {
     Command cmd{};
     cmd.type = CommandType::FILL_ROUNDED_RECT;
-    cmd.rounded_rect.x = x;
-    cmd.rounded_rect.y = y;
-    cmd.rounded_rect.w = w;
-    cmd.rounded_rect.h = h;
-    cmd.rounded_rect.rX = rX;
-    cmd.rounded_rect.rY = rY;
-    cmd.rounded_rect.color = color;
+    cmd.fill_rounded_rect.x = x;
+    cmd.fill_rounded_rect.y = y;
+    cmd.fill_rounded_rect.w = w;
+    cmd.fill_rounded_rect.h = h;
+    cmd.fill_rounded_rect.rX = rX;
+    cmd.fill_rounded_rect.rY = rY;
+    cmd.fill_rounded_rect.color = color;
     commands.emplace_back(std::move(cmd));
 }
 
