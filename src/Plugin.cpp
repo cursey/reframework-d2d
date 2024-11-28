@@ -7,6 +7,7 @@
 
 #include "D3D12Renderer.hpp"
 #include "DrawList.hpp"
+#include "D2DCommand.hpp"
 
 using API = reframework::API;
 using Clock = std::chrono::high_resolution_clock;
@@ -25,6 +26,11 @@ struct Plugin {
     std::chrono::duration<double> d2d_update_interval{DEFAULT_UPDATE_INTERVAL};
     bool update_d2d{};
     std::string last_script_error{};
+    float draw_function_cost{};
+    float cache_build_cost{};
+    float draw_calls_cost{};
+    int draw_calls_count{};
+    float render_cost{};
 };
 
 Plugin* g_plugin{};
@@ -87,6 +93,9 @@ void on_ref_lua_state_created(lua_State* l) try {
             auto image_path = images_path / filepath;
 
             std::filesystem::create_directories(images_path);
+            if (!std::filesystem::is_regular_file(image_path)) {
+                return std::shared_ptr<D2DImage>{nullptr};
+            }
 
             return std::make_shared<D2DImage>(g_plugin->d2d->wic(), g_plugin->d2d->context(), image_path);
         },
@@ -94,9 +103,25 @@ void on_ref_lua_state_created(lua_State* l) try {
 
     detail["get_max_updaterate"] = []() { return get_d2d_max_updaterate(); };
     detail["set_max_updaterate"] = [](double fps) { set_d2d_max_updaterate(fps); };
-    detail["get_last_error"] = []() {
-        return g_plugin->last_script_error;
+    detail["get_last_error"] = []() { return g_plugin->last_script_error; };
+    detail["get_draw_function_cost"] = []() { return g_plugin->draw_function_cost; };
+    detail["get_cache_build_cost"] = []() { return g_plugin->cache_build_cost; };
+    detail["get_draw_calls_cost"] = []() { return g_plugin->draw_calls_cost; };
+    detail["get_draw_calls_count"] = []() { return g_plugin->draw_calls_count; };
+    detail["get_render_cost"] = []() { return g_plugin->render_cost; };
+    detail["get_cache_status"] = []() { 
+        if (g_plugin->d2d == nullptr) {
+            return std::make_tuple(0, 0);
+        }
+        return std::make_tuple(g_plugin->d2d->cache_hit, g_plugin->d2d->cache_miss); 
     };
+    detail["get_need_repaint"] = []() {
+        if (g_plugin->d2d == nullptr) {
+            return false;
+        }
+        return g_plugin->d2d->need_repaint;
+    };
+    
     d2d["detail"] = detail;
     d2d["register"] = [](sol::protected_function init_fn, sol::protected_function draw_fn) {
         g_plugin->init_fns.emplace_back(init_fn);
@@ -237,74 +262,97 @@ void on_ref_frame() try {
         return;
     }
 
+    auto now = Clock::now();
     g_plugin->d3d12->render(
         [](D2DPainter& d2d) {
             auto cmds_lock = g_plugin->drawlist.acquire();
 
+            auto now = Clock::now();
+            g_plugin->draw_calls_count = cmds_lock.commands.size();
+            g_plugin->d2d->init_cache(cmds_lock.commands);
+            auto end = Clock::now();
+            auto us = std::chrono::duration<float, std::micro>(end - now).count();
+            g_plugin->cache_build_cost = us;
+            if (!g_plugin->d2d->need_repaint) {
+                g_plugin->draw_calls_cost = 0;
+                return;
+            }
+
+            now = Clock::now();
             for (auto&& cmd : cmds_lock.commands) {
                 switch (cmd.type) {
-                case DrawList::CommandType::TEXT:
+                case CommandType::TEXT:
                     g_plugin->d2d->text(cmd.font_resource, cmd.str, cmd.text.x, cmd.text.y, cmd.text.color);
                     break;
 
-                case DrawList::CommandType::FILL_RECT:
+                case CommandType::FILL_RECT:
                     g_plugin->d2d->fill_rect(cmd.fill_rect.x, cmd.fill_rect.y, cmd.fill_rect.w, cmd.fill_rect.h, cmd.fill_rect.color);
                     break;
 
-                case DrawList::CommandType::OUTLINE_RECT:
+                case CommandType::OUTLINE_RECT:
                     g_plugin->d2d->outline_rect(cmd.outline_rect.x, cmd.outline_rect.y, cmd.outline_rect.w, cmd.outline_rect.h,
                         cmd.outline_rect.thickness, cmd.outline_rect.color);
                     break;
 
-                case DrawList::CommandType::ROUNDED_RECT:
+                case CommandType::ROUNDED_RECT:
                     g_plugin->d2d->rounded_rect(cmd.rounded_rect.x, cmd.rounded_rect.y, cmd.rounded_rect.w, cmd.rounded_rect.h,
                         cmd.rounded_rect.rX, cmd.rounded_rect.rY, cmd.rounded_rect.thickness, cmd.rounded_rect.color);
                     break;
 
-                case DrawList::CommandType::FILL_ROUNDED_RECT:
-                    g_plugin->d2d->fill_rounded_rect(cmd.rounded_rect.x, cmd.rounded_rect.y, cmd.rounded_rect.w, cmd.rounded_rect.h,
-                        cmd.rounded_rect.rX, cmd.rounded_rect.rY, cmd.rounded_rect.color);
+                case CommandType::FILL_ROUNDED_RECT:
+                    g_plugin->d2d->fill_rounded_rect(cmd.fill_rounded_rect.x, cmd.fill_rounded_rect.y, cmd.fill_rounded_rect.w,
+                        cmd.fill_rounded_rect.h, cmd.fill_rounded_rect.rX, cmd.fill_rounded_rect.rY, cmd.fill_rounded_rect.color);
                     break;
 
-                case DrawList::CommandType::QUAD:
-                    g_plugin->d2d->quad(cmd.quad.x1, cmd.quad.y1, cmd.quad.x2, cmd.quad.y2, cmd.quad.x3, cmd.quad.y3, 
+                case CommandType::QUAD:
+                    g_plugin->d2d->quad(cmd.quad.x1, cmd.quad.y1, cmd.quad.x2, cmd.quad.y2, cmd.quad.x3, cmd.quad.y3,
                         cmd.quad.x4, cmd.quad.y4, cmd.quad.thickness, cmd.quad.color);
                     break;
 
-                case DrawList::CommandType::FILL_QUAD:
-                    g_plugin->d2d->fill_quad(cmd.fill_quad.x1, cmd.fill_quad.y1, cmd.fill_quad.x2, cmd.fill_quad.y2, 
+                case CommandType::FILL_QUAD:
+                    g_plugin->d2d->fill_quad(cmd.fill_quad.x1, cmd.fill_quad.y1, cmd.fill_quad.x2, cmd.fill_quad.y2,
                         cmd.fill_quad.x3, cmd.fill_quad.y3, cmd.fill_quad.x4, cmd.fill_quad.y4, cmd.fill_quad.color);
                     break;
 
-                case DrawList::CommandType::LINE:
+                case CommandType::LINE:
                     g_plugin->d2d->line(cmd.line.x1, cmd.line.y1, cmd.line.x2, cmd.line.y2, cmd.line.thickness, cmd.line.color);
                     break;
 
-                case DrawList::CommandType::IMAGE:
+                case CommandType::IMAGE:
                     g_plugin->d2d->image(cmd.image_resource, cmd.image.x, cmd.image.y, cmd.image.w, cmd.image.h);
                     break;
 
-                case DrawList::CommandType::FILL_CIRCLE:
+                case CommandType::FILL_CIRCLE:
                     g_plugin->d2d->fill_circle(
                         cmd.fill_circle.x, cmd.fill_circle.y, cmd.fill_circle.radiusX, cmd.fill_circle.radiusY, cmd.fill_circle.color);
                     break;
 
-                case DrawList::CommandType::CIRCLE:
-                    g_plugin->d2d->circle(cmd.circle.x, cmd.circle.y, cmd.circle.radiusX, cmd.circle.radiusY, cmd.circle.thickness, cmd.circle.color);
+                case CommandType::CIRCLE:
+                    g_plugin->d2d->circle(
+                        cmd.circle.x, cmd.circle.y, cmd.circle.radiusX, cmd.circle.radiusY, cmd.circle.thickness, cmd.circle.color);
                     break;
 
-                case DrawList::CommandType::PIE:
-                    g_plugin->d2d->pie(cmd.pie.x, cmd.pie.y, cmd.pie.r, cmd.pie.startAngle, cmd.pie.sweepAngle, cmd.pie.color, cmd.pie.clockwise);
+                case CommandType::PIE:
+                    g_plugin->d2d->pie(
+                        cmd.pie.x, cmd.pie.y, cmd.pie.r, cmd.pie.startAngle, cmd.pie.sweepAngle, cmd.pie.color, cmd.pie.clockwise);
                     break;
 
-                case DrawList::CommandType::RING:
+                case CommandType::RING:
                     g_plugin->d2d->ring(cmd.ring.x, cmd.ring.y, cmd.ring.outerRadius, cmd.ring.innerRadius, cmd.ring.startAngle, cmd.ring.sweepAngle,
                         cmd.ring.color, cmd.ring.clockwise);
                     break;
                 }
+                auto end = Clock::now();
+                auto us = std::chrono::duration<float, std::micro>(end - now).count();
+                g_plugin->draw_calls_cost = us;
             }
         },
         g_plugin->update_d2d);
+    if (g_plugin->update_d2d) {
+        auto end = Clock::now();
+        auto us = std::chrono::duration<float, std::micro>(end - now).count();
+        g_plugin->render_cost = us;
+    }
 
     g_plugin->update_d2d = false;
 } catch (const std::exception& e) {
@@ -320,6 +368,9 @@ void on_begin_rendering() try {
     if (g_plugin->needs_init) {
         auto _ = API::LuaLock{};
 
+        auto now = Clock::now();
+
+        API::get()->log_info("[reframework-d2d] initializing d2d init functions");
         for (const auto& init_fn : g_plugin->init_fns) {
             try {
                 auto result = init_fn();
@@ -333,6 +384,9 @@ void on_begin_rendering() try {
                 API::get()->log_error("[reframework-d2d] [on_ref_lua_device_reset] %s", e.what());
             }
         }
+        auto end = Clock::now();
+        auto ms = std::chrono::duration<float, std::milli>(end - now).count();
+        API::get()->log_info("[reframework-d2d] %d init functions initialized: %.2f ms", g_plugin->init_fns.size(), ms);
 
         g_plugin->needs_init = false;
     }
@@ -357,6 +411,10 @@ void on_begin_rendering() try {
                 handle_error_message(e.what());
             }
         }
+
+        auto end = Clock::now();
+        auto us = std::chrono::duration<float, std::micro>(end - now).count();
+        g_plugin->draw_function_cost = us;
 
         g_plugin->cmds = nullptr;
         g_plugin->d2d_next_frame_time = now + std::chrono::duration_cast<std::chrono::milliseconds>(g_plugin->d2d_update_interval);

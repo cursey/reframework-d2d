@@ -12,13 +12,18 @@
 
 #include "D2DFont.hpp"
 #include "D2DImage.hpp"
+#include "D2DCommand.hpp"
 
 class D2DPainter {
 public:
     template <typename T> using ComPtr = Microsoft::WRL::ComPtr<T>;
+    struct CachedCommand {
+        Command command{};
+    };
 
     D2DPainter(ID3D11Device* device, IDXGISurface* surface);
 
+    void init_cache(std::vector<Command>&);
     void begin();
     void end();
 
@@ -48,8 +53,14 @@ public:
     const auto& context() const { return m_context; }
     const auto& dwrite() const { return m_dwrite; }
     const auto& wic() const { return m_wic; }
+    bool need_repaint{};
+    int cache_hit{};
+    int cache_miss{};
 
 private:
+    int cache_command_count{};
+    std::vector<CachedCommand> command_cache{};
+
     ComPtr<ID2D1Factory3> m_d2d1{};
     ComPtr<ID2D1Device> m_device{};
     ComPtr<ID2D1DeviceContext> m_context{};
