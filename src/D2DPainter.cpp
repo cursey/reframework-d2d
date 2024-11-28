@@ -4,9 +4,6 @@
 
 #include "D2DPainter.hpp"
 
-#include "reframework/API.hpp"
-using API = reframework::API;
-
 D2DPainter::D2DPainter(ID3D11Device* device, IDXGISurface* surface) {
     if (FAILED(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, m_d2d1.GetAddressOf()))) {
         throw std::runtime_error{"Failed to create D2D factory"};
@@ -48,10 +45,8 @@ D2DPainter::D2DPainter(ID3D11Device* device, IDXGISurface* surface) {
 }
 
 void D2DPainter::init_cache(std::vector<Command>& commands) {
-    cache_index = 0;
     cache_hit = 0;
     cache_miss = 0;
-    no_cache = 0;
     need_repaint = false;
 
     if (commands.size() != cache_command_count) {
@@ -64,8 +59,9 @@ void D2DPainter::init_cache(std::vector<Command>& commands) {
         need_repaint = true;
     }
     
+    auto cache_index = 0;
     for (auto&& cmd : commands) {
-        const CachedGeometry& cache = command_cache[cache_index];
+        const CachedCommand& cache = command_cache[cache_index];
         if (cache.command.type == cmd.type && command_equals(cmd, cache.command)) {
             cache_hit++;
         } else {
@@ -231,8 +227,8 @@ void D2DPainter::pie(float centerX, float centerY, float radius, float startAngl
 
     // arc start -> arc end
     D2D1_POINT_2F arcEnd = D2D1::Point2F(centerX + radius * cosf(endRadians), centerY + radius * sinf(endRadians));
-    geometrySink->AddArc(D2D1::ArcSegment(
-        arcEnd, D2D1::SizeF(radius, radius), 0.0f, direction, (sweepAngle > 180.0f) ? D2D1_ARC_SIZE_LARGE : D2D1_ARC_SIZE_SMALL));
+    geometrySink->AddArc(D2D1::ArcSegment(arcEnd, D2D1::SizeF(radius, radius), 0.0f, direction,
+        (sweepAngle > 180.0f) ? D2D1_ARC_SIZE_LARGE : D2D1_ARC_SIZE_SMALL));
 
     // arc end -> circle center
     geometrySink->AddLine(circleCenter);
@@ -292,8 +288,7 @@ void D2DPainter::ring(float centerX, float centerY, float outerRadius, float inn
     const float endRadians = clockwise ? (startRadians + sweepRadians) : (startRadians - sweepRadians);
 
     // outer arc start
-    D2D1_POINT_2F outerStart =
-        D2D1::Point2F(centerX + outerRadius * std::cos(startRadians), centerY + outerRadius * std::sin(startRadians));
+    D2D1_POINT_2F outerStart = D2D1::Point2F(centerX + outerRadius * std::cos(startRadians), centerY + outerRadius * std::sin(startRadians));
     sink->BeginFigure(outerStart, D2D1_FIGURE_BEGIN_FILLED);
 
     // outer arc start -> outer arc end
@@ -306,8 +301,7 @@ void D2DPainter::ring(float centerX, float centerY, float outerRadius, float inn
     sink->AddLine(innerEnd);
 
     // inner arc end -> inner arc start
-    D2D1_POINT_2F innerStart =
-        D2D1::Point2F(centerX + innerRadius * std::cos(startRadians), centerY + innerRadius * std::sin(startRadians));
+    D2D1_POINT_2F innerStart = D2D1::Point2F(centerX + innerRadius * std::cos(startRadians), centerY + innerRadius * std::sin(startRadians));
     sink->AddArc(D2D1::ArcSegment(innerStart, D2D1::SizeF(innerRadius, innerRadius), 0.0f, counterDirection,
         (sweepAngle > 180.0f) ? D2D1_ARC_SIZE_LARGE : D2D1_ARC_SIZE_SMALL));
 

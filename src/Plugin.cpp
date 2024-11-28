@@ -27,6 +27,7 @@ struct Plugin {
     bool update_d2d{};
     std::string last_script_error{};
     float draw_function_cost{};
+    float cache_build_cost{};
     float draw_calls_cost{};
     int draw_calls_count{};
     float render_cost{};
@@ -104,6 +105,7 @@ void on_ref_lua_state_created(lua_State* l) try {
     detail["set_max_updaterate"] = [](double fps) { set_d2d_max_updaterate(fps); };
     detail["get_last_error"] = []() { return g_plugin->last_script_error; };
     detail["get_draw_function_cost"] = []() { return g_plugin->draw_function_cost; };
+    detail["get_cache_build_cost"] = []() { return g_plugin->cache_build_cost; };
     detail["get_draw_calls_cost"] = []() { return g_plugin->draw_calls_cost; };
     detail["get_draw_calls_count"] = []() { return g_plugin->draw_calls_count; };
     detail["get_render_cost"] = []() { return g_plugin->render_cost; };
@@ -265,14 +267,18 @@ void on_ref_frame() try {
         [](D2DPainter& d2d) {
             auto cmds_lock = g_plugin->drawlist.acquire();
 
+            auto now = Clock::now();
+            g_plugin->draw_calls_count = cmds_lock.commands.size();
             g_plugin->d2d->init_cache(cmds_lock.commands);
+            auto end = Clock::now();
+            auto us = std::chrono::duration<float, std::micro>(end - now).count();
+            g_plugin->cache_build_cost = us;
             if (!g_plugin->d2d->need_repaint) {
                 g_plugin->draw_calls_cost = 0;
-                g_plugin->draw_calls_count = 0;
                 return;
             }
 
-            auto now = Clock::now();
+            now = Clock::now();
             for (auto&& cmd : cmds_lock.commands) {
                 switch (cmd.type) {
                 case CommandType::TEXT:
@@ -294,18 +300,18 @@ void on_ref_frame() try {
                     break;
 
                 case CommandType::FILL_ROUNDED_RECT:
-                    g_plugin->d2d->fill_rounded_rect(cmd.rounded_rect.x, cmd.rounded_rect.y, cmd.rounded_rect.w, cmd.rounded_rect.h,
-                        cmd.rounded_rect.rX, cmd.rounded_rect.rY, cmd.rounded_rect.color);
+                    g_plugin->d2d->fill_rounded_rect(cmd.fill_rounded_rect.x, cmd.fill_rounded_rect.y, cmd.fill_rounded_rect.w,
+                        cmd.fill_rounded_rect.h, cmd.fill_rounded_rect.rX, cmd.fill_rounded_rect.rY, cmd.fill_rounded_rect.color);
                     break;
 
                 case CommandType::QUAD:
-                    g_plugin->d2d->quad(cmd.quad.x1, cmd.quad.y1, cmd.quad.x2, cmd.quad.y2, cmd.quad.x3, cmd.quad.y3, cmd.quad.x4,
-                        cmd.quad.y4, cmd.quad.thickness, cmd.quad.color);
+                    g_plugin->d2d->quad(cmd.quad.x1, cmd.quad.y1, cmd.quad.x2, cmd.quad.y2, cmd.quad.x3, cmd.quad.y3,
+                        cmd.quad.x4, cmd.quad.y4, cmd.quad.thickness, cmd.quad.color);
                     break;
 
                 case CommandType::FILL_QUAD:
-                    g_plugin->d2d->fill_quad(cmd.fill_quad.x1, cmd.fill_quad.y1, cmd.fill_quad.x2, cmd.fill_quad.y2, cmd.fill_quad.x3,
-                        cmd.fill_quad.y3, cmd.fill_quad.x4, cmd.fill_quad.y4, cmd.fill_quad.color);
+                    g_plugin->d2d->fill_quad(cmd.fill_quad.x1, cmd.fill_quad.y1, cmd.fill_quad.x2, cmd.fill_quad.y2,
+                        cmd.fill_quad.x3, cmd.fill_quad.y3, cmd.fill_quad.x4, cmd.fill_quad.y4, cmd.fill_quad.color);
                     break;
 
                 case CommandType::LINE:
@@ -332,14 +338,13 @@ void on_ref_frame() try {
                     break;
 
                 case CommandType::RING:
-                    g_plugin->d2d->ring(cmd.ring.x, cmd.ring.y, cmd.ring.outerRadius, cmd.ring.innerRadius, cmd.ring.startAngle,
-                        cmd.ring.sweepAngle, cmd.ring.color, cmd.ring.clockwise);
+                    g_plugin->d2d->ring(cmd.ring.x, cmd.ring.y, cmd.ring.outerRadius, cmd.ring.innerRadius, cmd.ring.startAngle, cmd.ring.sweepAngle,
+                        cmd.ring.color, cmd.ring.clockwise);
                     break;
                 }
                 auto end = Clock::now();
                 auto us = std::chrono::duration<float, std::micro>(end - now).count();
                 g_plugin->draw_calls_cost = us;
-                g_plugin->draw_calls_count = cmds_lock.commands.size();
             }
         },
         g_plugin->update_d2d);
@@ -381,7 +386,7 @@ void on_begin_rendering() try {
         }
         auto end = Clock::now();
         auto ms = std::chrono::duration<float, std::milli>(end - now).count();
-        API::get()->log_info("[reframework-d2d] %d init functions initialized: %d ms", g_plugin->init_fns.size(), ms);
+        API::get()->log_info("[reframework-d2d] %d init functions initialized: %.2f ms", g_plugin->init_fns.size(), ms);
 
         g_plugin->needs_init = false;
     }

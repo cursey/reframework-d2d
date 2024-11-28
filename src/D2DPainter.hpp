@@ -2,7 +2,6 @@
 #include <string>
 #include <tuple>
 #include <vector>
-#include <functional>
 
 #include <d2d1_3.h>
 #include <d3d11.h>
@@ -15,16 +14,15 @@
 #include "D2DImage.hpp"
 #include "D2DCommand.hpp"
 
-template <typename T> using ComPtr = Microsoft::WRL::ComPtr<T>;
 class D2DPainter {
 public:
-    struct CachedGeometry {
+    template <typename T> using ComPtr = Microsoft::WRL::ComPtr<T>;
+    struct CachedCommand {
         Command command{};
     };
 
     D2DPainter(ID3D11Device* device, IDXGISurface* surface);
 
-    ComPtr<ID2D1Bitmap> cache_bitmap;
     void init_cache(std::vector<Command>&);
     void begin();
     void end();
@@ -56,14 +54,12 @@ public:
     const auto& dwrite() const { return m_dwrite; }
     const auto& wic() const { return m_wic; }
     bool need_repaint{};
-    int cache_index{};
     int cache_hit{};
     int cache_miss{};
-    int no_cache{};
 
 private:
     int cache_command_count{};
-    std::vector<CachedGeometry> command_cache{};
+    std::vector<CachedCommand> command_cache{};
 
     ComPtr<ID2D1Factory3> m_d2d1{};
     ComPtr<ID2D1Device> m_device{};
