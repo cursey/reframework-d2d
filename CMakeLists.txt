@@ -7,7 +7,7 @@ CPMAddPackage("gh:ThePhD/sol2@3.3.0")
 CPMAddPackage(
     NAME lua
     GITHUB_REPOSITORY lua/lua
-    VERSION 5.4.6
+    VERSION 5.4.3
     DOWNLOAD_ONLY YES
 )
 
