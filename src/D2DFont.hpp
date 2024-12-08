@@ -22,4 +22,5 @@ private:
     ComPtr<IDWriteFactory> m_dwrite{};
     ComPtr<IDWriteTextFormat> m_format{};
     LruCache<std::string, ComPtr<IDWriteTextLayout>> m_layouts{100};
+    LruCache<std::string, std::tuple<float, float>> m_sizes{100};
 };

@@ -35,9 +35,16 @@ D2DFont::ComPtr<IDWriteTextLayout> D2DFont::layout(const std::string& text) {
 }
 
 std::tuple<float, float> D2DFont::measure(const std::string& text) {
+    if (auto size = m_sizes.get(text)) {
+        return (*size).get();
+    }
+
     DWRITE_TEXT_METRICS metrics{};
 
     layout(text)->GetMetrics(&metrics);
 
-    return std::make_tuple(metrics.width, metrics.height);
+    auto size = std::make_tuple(metrics.width, metrics.height);
+    m_sizes.put(text, size);
+
+    return size;
 }
