@@ -151,19 +151,20 @@ void D2DPainter::fill_circle(float centerX, float centerY, float radiusX, float 
     m_context->FillEllipse(ellipse, m_brush.Get());
 }
 
-void D2DPainter::circle(float centerX, float centerY, float radius, int thickness, unsigned int color) {
+void D2DPainter::circle(float centerX, float centerY, float radius, float thickness, unsigned int color) {
     set_color(color);
     D2D1_ELLIPSE ellipse = D2D1::Ellipse(D2D1::Point2F(centerX, centerY), radius, radius);
     m_context->DrawEllipse(ellipse, m_brush.Get(), thickness);
 }
 
-void D2DPainter::circle(float centerX, float centerY, float radiusX, float radiusY, int thickness, unsigned int color) {
+void D2DPainter::circle(float centerX, float centerY, float radiusX, float radiusY, float thickness, unsigned int color) {
     set_color(color);
     D2D1_ELLIPSE ellipse = D2D1::Ellipse(D2D1::Point2F(centerX, centerY), radiusX, radiusY);
     m_context->DrawEllipse(ellipse, m_brush.Get(), thickness);
 }
 
-void D2DPainter::pie(float centerX, float centerY, float radius, float startAngle, float sweepAngle, unsigned int color, bool clockwise) {
+void D2DPainter::pie(float centerX, float centerY, float radius, float startAngle, float sweepAngle, float thickness,
+    unsigned int color, bool clockwise) {
     if (startAngle < 0) {
         startAngle += 360.0f;
     }
@@ -173,7 +174,11 @@ void D2DPainter::pie(float centerX, float centerY, float radius, float startAngl
         return;
     }
     if (sweepAngle == 360.0f) {
-        return this->fill_circle(centerX, centerY, radius, color);
+        if (thickness == 0) {
+            return this->fill_circle(centerX, centerY, radius, color);
+        } else {
+            return this->circle(centerX, centerY, radius, thickness, color);
+        }
     }
     auto direction = clockwise ? D2D1_SWEEP_DIRECTION_CLOCKWISE : D2D1_SWEEP_DIRECTION_COUNTER_CLOCKWISE;
 
@@ -207,10 +212,14 @@ void D2DPainter::pie(float centerX, float centerY, float radius, float startAngl
     geometrySink->Close();
 
     set_color(color);
-    m_context->FillGeometry(pathGeometry.Get(), m_brush.Get());
+    if (thickness == 0) {
+        m_context->FillGeometry(pathGeometry.Get(), m_brush.Get());
+    } else {
+        m_context->DrawGeometry(pathGeometry.Get(), m_brush.Get(), thickness);
+    }
 }
 
-void D2DPainter::ring(float centerX, float centerY, float outerRadius, float innerRadius, unsigned int color) {
+void D2DPainter::ring(float centerX, float centerY, float outerRadius, float innerRadius, float thickness, unsigned int color) {
     ComPtr<ID2D1EllipseGeometry> outerCircle;
     m_d2d1->CreateEllipseGeometry(D2D1::Ellipse(D2D1::Point2F(centerX, centerY), outerRadius, outerRadius), &outerCircle);
     ComPtr<ID2D1EllipseGeometry> innerCircle;
@@ -225,11 +234,15 @@ void D2DPainter::ring(float centerX, float centerY, float outerRadius, float inn
     sink->Close();
 
     set_color(color);
-    m_context->FillGeometry(pathGeometry.Get(), m_brush.Get());
+    if (thickness == 0) {
+        m_context->FillGeometry(pathGeometry.Get(), m_brush.Get());
+    } else {
+        m_context->DrawGeometry(pathGeometry.Get(), m_brush.Get(), thickness);
+    }
 }
 
-void D2DPainter::ring(
-    float centerX, float centerY, float outerRadius, float innerRadius, float startAngle, float sweepAngle, unsigned int color, bool clockwise) {
+void D2DPainter::ring(float centerX, float centerY, float outerRadius, float innerRadius, float startAngle, float sweepAngle,
+    float thickness, unsigned int color, bool clockwise) {
     if (startAngle < 0) {
         startAngle += 360.0f;
     }
@@ -239,7 +252,7 @@ void D2DPainter::ring(
         return;
     }
     if (sweepAngle == 360.0f) {
-        return this->ring(centerX, centerY, outerRadius, innerRadius, color);
+        return this->ring(centerX, centerY, outerRadius, innerRadius, thickness, color);
     }
     auto direction = clockwise ? D2D1_SWEEP_DIRECTION_CLOCKWISE : D2D1_SWEEP_DIRECTION_COUNTER_CLOCKWISE;
     auto counterDirection = !clockwise ? D2D1_SWEEP_DIRECTION_CLOCKWISE : D2D1_SWEEP_DIRECTION_COUNTER_CLOCKWISE;
@@ -282,5 +295,9 @@ void D2DPainter::ring(
     sink->Close();
 
     set_color(color);
-    m_context->FillGeometry(pathGeometry.Get(), m_brush.Get());
+    if (thickness == 0) {
+        m_context->FillGeometry(pathGeometry.Get(), m_brush.Get());
+    } else {
+        m_context->DrawGeometry(pathGeometry.Get(), m_brush.Get(), thickness);
+    }
 }
