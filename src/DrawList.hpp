@@ -10,7 +10,7 @@
 
 class DrawList {
 public:
-    enum class CommandType { TEXT, FILL_RECT, OUTLINE_RECT, ROUNDED_RECT, FILL_ROUNDED_RECT, QUAD, FILL_QUAD, LINE, IMAGE, FILL_CIRCLE, CIRCLE, PIE, RING };
+    enum class CommandType { TEXT, FILL_RECT, OUTLINE_RECT, ROUNDED_RECT, FILL_ROUNDED_RECT, QUAD, FILL_QUAD, LINE, IMAGE, FILL_CIRCLE, CIRCLE, PIE, OUTLINE_PIE, RING, OUTLINE_RING };
 
     struct Command {
         CommandType type;
@@ -118,6 +118,16 @@ public:
             struct {
                 float x{};
                 float y{};
+                float r{};
+                float startAngle{};
+                float sweepAngle{};
+                float thickness{};
+                unsigned int color{};
+                bool clockwise{};
+            } outline_pie;
+            struct {
+                float x{};
+                float y{};
                 float outerRadius{};
                 float innerRadius{};
                 float startAngle{};
@@ -125,6 +135,17 @@ public:
                 unsigned int color{};
                 bool clockwise{};
             } ring;
+            struct {
+                float x{};
+                float y{};
+                float outerRadius{};
+                float innerRadius{};
+                float startAngle{};
+                float sweepAngle{};
+                float thickness{};
+                unsigned int color{};
+                bool clockwise{};
+            } outline_ring;
         };
         std::string str{};
         std::shared_ptr<D2DFont> font_resource{};
@@ -147,8 +168,10 @@ public:
         void fill_circle(float x, float y, float radiusX, float radiusY, unsigned int color);
         void circle(float x, float y, float radiusX, float radiusY, float thickness, unsigned int color);
         void pie(float x, float y, float r, float startAngle, float sweepAngle, unsigned int color, bool clockwise);
-        void ring(float x, float y, float outerRadius, float innerRadius, float startAngle, float sweepAngle, unsigned int color,
-            bool clockwise);
+        void outline_pie(float x, float y, float r, float startAngle, float sweepAngle, float thickness, unsigned int color, bool clockwise);
+        void ring(float x, float y, float outerRadius, float innerRadius, float startAngle, float sweepAngle, unsigned int color, bool clockwise);
+        void outline_ring(float x, float y, float outerRadius, float innerRadius, float startAngle, float sweepAngle, float thickness,
+            unsigned int color, bool clockwise);
     };
 
     auto acquire() { return CommandLock{m_commands, std::scoped_lock{m_commands_mux}}; }
