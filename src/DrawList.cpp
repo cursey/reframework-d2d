@@ -153,8 +153,21 @@ void DrawList::CommandLock::pie(float x, float y, float r, float startAngle, flo
     commands.emplace_back(std::move(cmd));
 }
 
-void DrawList::CommandLock::ring(float x, float y, float outerRadius, float innerRadius, float startAngle, float sweepAngle, unsigned int color,
-    bool clockwise) {
+void DrawList::CommandLock::outline_pie(float x, float y, float r, float startAngle, float sweepAngle, float thickness, unsigned int color, bool clockwise) {
+    Command cmd{};
+    cmd.type = CommandType::OUTLINE_PIE;
+    cmd.outline_pie.x = x;
+    cmd.outline_pie.y = y;
+    cmd.outline_pie.r = r;
+    cmd.outline_pie.startAngle = startAngle;
+    cmd.outline_pie.sweepAngle = sweepAngle;
+    cmd.outline_pie.thickness = thickness;
+    cmd.outline_pie.color = color;
+    cmd.outline_pie.clockwise = clockwise;
+    commands.emplace_back(std::move(cmd));
+}
+
+void DrawList::CommandLock::ring(float x, float y, float outerRadius, float innerRadius, float startAngle, float sweepAngle, unsigned int color, bool clockwise) {
     Command cmd{};
     cmd.type = CommandType::RING;
     cmd.ring.x = x;
@@ -165,5 +178,21 @@ void DrawList::CommandLock::ring(float x, float y, float outerRadius, float inne
     cmd.ring.sweepAngle = sweepAngle;
     cmd.ring.color = color;
     cmd.ring.clockwise = clockwise;
+    commands.emplace_back(std::move(cmd));
+}
+
+void DrawList::CommandLock::outline_ring(float x, float y, float outerRadius, float innerRadius, float startAngle, float sweepAngle,
+    float thickness, unsigned int color, bool clockwise) {
+    Command cmd{};
+    cmd.type = CommandType::OUTLINE_RING;
+    cmd.outline_ring.x = x;
+    cmd.outline_ring.y = y;
+    cmd.outline_ring.outerRadius = outerRadius;
+    cmd.outline_ring.innerRadius = innerRadius;
+    cmd.outline_ring.startAngle = startAngle;
+    cmd.outline_ring.sweepAngle = sweepAngle;
+    cmd.outline_ring.thickness = thickness;
+    cmd.outline_ring.color = color;
+    cmd.outline_ring.clockwise = clockwise;
     commands.emplace_back(std::move(cmd));
 }
