@@ -87,6 +87,9 @@ void on_ref_lua_state_created(lua_State* l) try {
             auto image_path = images_path / filepath;
 
             std::filesystem::create_directories(images_path);
+            if (!std::filesystem::is_regular_file(image_path)) {
+                return std::shared_ptr<D2DImage>{nullptr};
+            }
 
             return std::make_shared<D2DImage>(g_plugin->d2d->wic(), g_plugin->d2d->context(), image_path);
         },
