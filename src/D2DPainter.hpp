@@ -59,6 +59,6 @@ private:
     ComPtr<ID2D1Bitmap1> m_rt{};
     ComPtr<ID2D1SolidColorBrush> m_brush{};
 
-    ComPtr<IDWriteFactory> m_dwrite{};
+    ComPtr<IDWriteFactory5> m_dwrite{};
     ComPtr<IWICImagingFactory> m_wic{};
 };

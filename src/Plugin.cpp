@@ -57,32 +57,72 @@ void on_ref_lua_state_created(lua_State* l) try {
     auto d2d = lua.create_table();
     auto detail = lua.create_table();
 
+    std::string modpath{};
+    modpath.resize(1024, 0);
+    modpath.resize(GetModuleFileName(nullptr, modpath.data(), modpath.size()));
+
     d2d.new_usertype<D2DFont>(
         "Font", sol::meta_function::construct,
-        [](const char* name, int size, sol::object bold_obj, sol::object italic_obj) {
+        [modpath](const char* firstparm, sol::object secondparm, sol::object thirdparm, sol::object fourthparm, sol::object fifthparm) {
             auto bold = false;
             auto italic = false;
+            auto size = 24;
+            std::string family;
 
-            if (bold_obj.is<bool>()) {
-                bold = bold_obj.as<bool>();
+            if (!secondparm.is<int>()) {
+                family = secondparm.as<const char*>();
+
+                size = thirdparm.as<int>();
+
+                if (fourthparm.is<bool>()) {
+                    bold = fourthparm.as<bool>();
+                }
+
+                if (fifthparm.is<bool>()) {
+                    italic = fifthparm.as<bool>();
+                }
+
+                auto fonts_path = std::filesystem::path{modpath}.parent_path() / "reframework" / "fonts";
+                auto font_path = fonts_path / firstparm;
+
+                std::filesystem::create_directories(fonts_path);
+                if (!std::filesystem::is_regular_file(font_path)) {
+                    return std::shared_ptr<D2DFont>{nullptr};
+                }
+
+                return std::make_shared<D2DFont>(g_plugin->d2d->dwrite(), font_path, family, size, bold, italic);
+            } else {
+                size = secondparm.as<int>();
+
+                if (thirdparm.is<bool>()) {
+                    bold = thirdparm.as<bool>();
+                }
+
+                if (fourthparm.is<bool>()) {
+                    italic = fourthparm.as<bool>();
+                }
+
+                family = firstparm;
+                if (family.find_first_of(".") != std::string::npos) {
+                    auto fonts_path = std::filesystem::path{modpath}.parent_path() / "reframework" / "fonts";
+                    auto font_path = fonts_path / family;
+
+                    std::filesystem::create_directories(fonts_path);
+                    if (!std::filesystem::is_regular_file(font_path)) {
+                        return std::shared_ptr<D2DFont>{nullptr};
+                    }
+
+                    return std::make_shared<D2DFont>(g_plugin->d2d->dwrite(), font_path, "", size, bold, italic);
+                }
+
+                return std::make_shared<D2DFont>(g_plugin->d2d->dwrite(), firstparm, size, bold, italic);
             }
-
-            if (italic_obj.is<bool>()) {
-                italic = italic_obj.as<bool>();
-            }
-
-            return std::make_shared<D2DFont>(g_plugin->d2d->dwrite(), name, size, bold, italic);
         },
         "measure", &D2DFont::measure);
 
     d2d.new_usertype<D2DImage>(
         "Image", sol::meta_function::construct,
-        [](const char* filepath) {
-            std::string modpath{};
-
-            modpath.resize(1024, 0);
-            modpath.resize(GetModuleFileName(nullptr, modpath.data(), modpath.size()));
-
+        [modpath](const char* filepath) {
             auto images_path = std::filesystem::path{modpath}.parent_path() / "reframework" / "images";
             auto image_path = images_path / filepath;
 
