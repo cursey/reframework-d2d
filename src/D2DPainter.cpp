@@ -130,13 +130,13 @@ void D2DPainter::line(float x1, float y1, float x2, float y2, float thickness, u
     m_context->DrawLine({x1, y1}, {x2, y2}, m_brush.Get(), thickness);
 }
 
-void D2DPainter::image(std::shared_ptr<D2DImage>& image, float x, float y) {
+void D2DPainter::image(std::shared_ptr<D2DImage>& image, float x, float y, float alpha) {
     auto [w, h] = image->size();
-    m_context->DrawBitmap(image->bitmap().Get(), {x, y, x + w, y + h});
+    m_context->DrawBitmap(image->bitmap().Get(), {x, y, x + w, y + h}, alpha);
 }
 
-void D2DPainter::image(std::shared_ptr<D2DImage>& image, float x, float y, float w, float h) {
-    m_context->DrawBitmap(image->bitmap().Get(), {x, y, x + w, y + h});
+void D2DPainter::image(std::shared_ptr<D2DImage>& image, float x, float y, float w, float h, float alpha) {
+    m_context->DrawBitmap(image->bitmap().Get(), {x, y, x + w, y + h}, alpha);
 }
 
 void D2DPainter::fill_circle(float centerX, float centerY, float radius, unsigned int color) {
