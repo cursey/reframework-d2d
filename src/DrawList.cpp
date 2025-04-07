@@ -106,13 +106,14 @@ void DrawList::CommandLock::line(float x1, float y1, float x2, float y2, float t
     commands.emplace_back(std::move(cmd));
 }
 
-void DrawList::CommandLock::image(std::shared_ptr<D2DImage>& image, float x, float y, float w, float h) {
+void DrawList::CommandLock::image(std::shared_ptr<D2DImage>& image, float x, float y, float w, float h, float alpha) {
     Command cmd{};
     cmd.type = CommandType::IMAGE;
     cmd.image.x = x;
     cmd.image.y = y;
     cmd.image.w = w;
     cmd.image.h = h;
+	cmd.image.alpha = alpha;
     cmd.image_resource = image;
     commands.emplace_back(std::move(cmd));
 }

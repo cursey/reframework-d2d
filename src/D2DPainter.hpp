@@ -32,8 +32,8 @@ public:
     void quad(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4, float thickness, unsigned int color);
     void fill_quad(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4, unsigned int color);
     void line(float x1, float y1, float x2, float y2, float thickness, unsigned int color);
-    void image(std::shared_ptr<D2DImage>& image, float x, float y);
-    void image(std::shared_ptr<D2DImage>& image, float x, float y, float w, float h);
+    void image(std::shared_ptr<D2DImage>& image, float x, float y, float alpha);
+    void image(std::shared_ptr<D2DImage>& image, float x, float y, float w, float h, float alpha);
     void fill_circle(float centerX, float centerY, float radius, unsigned int color);
     void fill_circle(float centerX, float centerY, float radiusX, float radiusY, unsigned int color);
     void circle(float centerX, float centerY, float radius, float thickness, unsigned int color);

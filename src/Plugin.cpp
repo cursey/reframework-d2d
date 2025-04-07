@@ -190,19 +190,24 @@ void on_ref_lua_state_created(lua_State* l) try {
     d2d["line"] = [](float x1, float y1, float x2, float y2, float thickness, unsigned int color) {
         g_plugin->cmds->line(x1, y1, x2, y2, thickness, color);
     };
-    d2d["image"] = [](std::shared_ptr<D2DImage>& image, float x, float y, sol::object w_obj, sol::object h_obj) {
-        auto [w, h] = image->size();
+	d2d["image"] = [](std::shared_ptr<D2DImage>& image, float x, float y, sol::object w_obj, sol::object h_obj, sol::object alpha_obj) {
+		auto [w, h] = image->size();
+		float alpha = 1.0f;
 
-        if (w_obj.is<float>()) {
-            w = w_obj.as<float>();
-        }
+		if (w_obj.is<float>()) {
+			w = w_obj.as<float>();
+		}
 
-        if (h_obj.is<float>()) {
-            h = h_obj.as<float>();
-        }
+		if (h_obj.is<float>()) {
+			h = h_obj.as<float>();
+		}
 
-        g_plugin->cmds->image(image, x, y, w, h);
-    };
+		if (alpha_obj.is<float>()) {
+			alpha = alpha_obj.as<float>();
+		}
+
+		g_plugin->cmds->image(image, x, y, w, h, alpha);
+	};
     d2d["fill_circle"] = [](float x, float y, float r, unsigned int color) { g_plugin->cmds->fill_circle(x, y, r, r, color); };
     d2d["circle"] = [](float x, float y, float r, float thickness, unsigned int color) {
         g_plugin->cmds->circle(x, y, r, r, thickness, color);
@@ -343,7 +348,7 @@ void on_ref_frame() try {
                     break;
 
                 case DrawList::CommandType::IMAGE:
-                    g_plugin->d2d->image(cmd.image_resource, cmd.image.x, cmd.image.y, cmd.image.w, cmd.image.h);
+                    g_plugin->d2d->image(cmd.image_resource, cmd.image.x, cmd.image.y, cmd.image.w, cmd.image.h, cmd.image.alpha);
                     break;
 
                 case DrawList::CommandType::FILL_CIRCLE:
