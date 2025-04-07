@@ -15,7 +15,7 @@ re.on_draw_ui(
             cfg.max_update_rate = value 
         end
 
-        local last_error = d2d.detail.get_last_script_error()
+        local last_error = d2d.detail.get_last_error()
         if last_error ~= "" then
             imgui.text("Last Script Error:")
             imgui.text_colored(last_error, 0xFF0000FF)
