@@ -35,7 +35,7 @@ D2DPainter::D2DPainter(ID3D11Device* device, IDXGISurface* surface) {
         throw std::runtime_error{"Failed to create D2D brush"};
     }
 
-    if (FAILED(DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), &m_dwrite))) {
+    if (FAILED(DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory5), &m_dwrite))) {
         throw std::runtime_error{"Failed to create DWrite factory"};
     }
 
