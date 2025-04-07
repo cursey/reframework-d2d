@@ -3,3 +3,5 @@ install/
 .vscode/
 .vs/
 out/
+CMakeSettings.json
+cmake-build-*/
